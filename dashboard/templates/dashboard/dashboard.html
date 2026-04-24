@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord · AVC Predict{% endblock %}
+
+{% block content %}
+  <section class="stat-grid" aria-label="Indicateurs clés">
+    {% for stat in stats %}
+      <article class="stat-card stat-card--{{ stat.accent }}">
+        <div class="stat-card__icon" aria-hidden="true">
+          {% if stat.icon == "activity" %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          {% elif stat.icon == "alert" %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          {% elif stat.icon == "trophy" %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 4h3v3a3 3 0 0 1-3 3"/><path d="M7 4H4v3a3 3 0 0 0 3 3"/></svg>
+          {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          {% endif %}
+        </div>
+        <div class="stat-card__body">
+          <div class="stat-card__label">{{ stat.label }}</div>
+          <div class="stat-card__value">{{ stat.value }}</div>
+          <div class="stat-card__delta">{{ stat.delta }}</div>
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="two-col">
+    <article class="card" aria-labelledby="patient-form-title">
+      <header class="card__header">
+        <div>
+          <h2 id="patient-form-title" class="card__title">Données du patient</h2>
+          <p class="card__subtitle">Renseignez les caractéristiques cliniques pour lancer une prédiction.</p>
+        </div>
+        <span class="chip chip--teal">Formulaire</span>
+      </header>
+
+      <form class="patient-form" onsubmit="event.preventDefault();" autocomplete="off">
+        <div class="form-row">
+          <label class="field">
+            <span>Genre</span>
+            <select name="gender">
+              <option>Femme</option>
+              <option>Homme</option>
+              <option>Autre</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Âge</span>
+            <input type="number" name="age" min="0" max="120" step="1" placeholder="ex. 54" />
+          </label>
+          <label class="field">
+            <span>IMC</span>
+            <input type="number" name="bmi" min="0" step="0.1" placeholder="ex. 27.4" />
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="field">
+            <span>Hypertension</span>
+            <select name="hypertension">
+              <option value="0">Non</option>
+              <option value="1">Oui</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Maladie cardiaque</span>
+            <select name="heart_disease">
+              <option value="0">Non</option>
+              <option value="1">Oui</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Déjà marié(e)</span>
+            <select name="ever_married">
+              <option value="1">Oui</option>
+              <option value="0">Non</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="field">
+            <span>Type d'emploi</span>
+            <select name="work_type">
+              <option>Privé</option>
+              <option>Indépendant</option>
+              <option>Fonction publique</option>
+              <option>Enfant</option>
+              <option>Jamais travaillé</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Zone de résidence</span>
+            <select name="residence_type">
+              <option>Urbaine</option>
+              <option>Rurale</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Statut tabagique</span>
+            <select name="smoking_status">
+              <option>Jamais fumé</option>
+              <option>Ancien fumeur</option>
+              <option>Fumeur</option>
+              <option>Inconnu</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="field field--wide">
+            <span>Glycémie moyenne (mg/dL)</span>
+            <input type="number" name="avg_glucose_level" min="0" step="0.1" placeholder="ex. 110.5" />
+          </label>
+          <label class="field">
+            <span>Modèle à utiliser</span>
+            <select name="model">
+              <option>Random Forest</option>
+              <option>Gradient Boosting</option>
+              <option>Logistic Regression</option>
+              <option>SVM</option>
+              <option>KNN</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="reset" class="btn btn--ghost">Réinitialiser</button>
+          <button type="submit" class="btn btn--primary" disabled title="Non connecté au modèle IA pour le moment">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+            Lancer la prédiction
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article class="card card--risk card--risk-{{ sample_result.risk_level }}" aria-labelledby="result-title">
+      <header class="card__header">
+        <div>
+          <h2 id="result-title" class="card__title">Résultat de la prédiction</h2>
+          <p class="card__subtitle">Exemple — les résultats réels seront calculés par le modèle IA.</p>
+        </div>
+        <span class="chip chip--{{ sample_result.risk_level }}">Risque {{ sample_result.risk_label|lower }}</span>
+      </header>
+
+      <div class="risk-result">
+        <div class="risk-gauge" role="img" aria-label="Probabilité de risque d'AVC">
+          <svg viewBox="0 0 120 120" class="risk-gauge__svg">
+            <circle cx="60" cy="60" r="52" class="risk-gauge__track" />
+            <circle cx="60" cy="60" r="52" class="risk-gauge__value"
+                    style="stroke-dasharray: {{ sample_result.probability|floatformat:2|slice:'2:' }} 1000;"
+                    pathLength="100" />
+          </svg>
+          <div class="risk-gauge__text">
+            <div class="risk-gauge__percent">{{ sample_result.probability|floatformat:2 }}</div>
+            <div class="risk-gauge__label">Probabilité</div>
+          </div>
+        </div>
+
+        <div class="risk-summary">
+          <div class="risk-summary__line">
+            <span class="risk-summary__label">Modèle</span>
+            <span class="risk-summary__value">{{ sample_result.model }}</span>
+          </div>
+          <div class="risk-summary__line">
+            <span class="risk-summary__label">Niveau de risque</span>
+            <span class="risk-summary__value risk-summary__value--{{ sample_result.risk_level }}">{{ sample_result.risk_label }}</span>
+          </div>
+          <div class="risk-summary__contrib">
+            <div class="risk-summary__contrib-title">Facteurs principaux</div>
+            <ul class="risk-summary__contrib-list">
+              {% for name, value in sample_result.contributors %}
+                <li><span>{{ name }}</span><strong>{{ value }}</strong></li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="recommendation">
+        <div class="recommendation__title">Recommandation clinique</div>
+        <p class="recommendation__text">{{ sample_result.recommendation }}</p>
+      </div>
+    </article>
+  </section>
+
+  <section class="card" aria-labelledby="models-table-title">
+    <header class="card__header">
+      <div>
+        <h2 id="models-table-title" class="card__title">Comparaison des modèles d'IA</h2>
+        <p class="card__subtitle">Mesures calculées sur le jeu de validation. Le meilleur modèle est surligné.</p>
+      </div>
+      <span class="chip chip--blue">5 modèles</span>
+    </header>
+    <div class="table-wrap">
+      <table class="models-table">
+        <thead>
+          <tr>
+            <th scope="col">Modèle</th>
+            <th scope="col">Accuracy</th>
+            <th scope="col">Précision</th>
+            <th scope="col">Rappel</th>
+            <th scope="col">F1-score</th>
+            <th scope="col">ROC-AUC</th>
+            <th scope="col">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in models_comparison %}
+            <tr {% if m.is_best %}class="models-table__row--best"{% endif %}>
+              <th scope="row">{{ m.name }}</th>
+              <td>{{ m.accuracy|floatformat:3 }}</td>
+              <td>{{ m.precision|floatformat:3 }}</td>
+              <td>{{ m.recall|floatformat:3 }}</td>
+              <td>{{ m.f1|floatformat:3 }}</td>
+              <td>{{ m.roc_auc|floatformat:3 }}</td>
+              <td>
+                {% if m.is_best %}
+                  <span class="badge badge--teal">Meilleur</span>
+                {% else %}
+                  <span class="badge badge--muted">Référence</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="performance-chart-title">
+    <header class="card__header">
+      <div>
+        <h2 id="performance-chart-title" class="card__title">Comparaison des performances</h2>
+        <p class="card__subtitle">Vue d'ensemble des scores par modèle (données de démonstration).</p>
+      </div>
+      <span class="chip chip--teal">Visualisation</span>
+    </header>
+    <div class="chart-wrap">
+      <canvas id="models-performance-chart" height="110"></canvas>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    window.__AVC_MODELS__ = [
+      {% for m in models_comparison %}
+        {
+          name: "{{ m.name|escapejs }}",
+          accuracy: {{ m.accuracy }},
+          precision: {{ m.precision }},
+          recall: {{ m.recall }},
+          f1: {{ m.f1 }},
+          roc_auc: {{ m.roc_auc }},
+          is_best: {% if m.is_best %}true{% else %}false{% endif %}
+        }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ];
+  </script>
+{% endblock %}
