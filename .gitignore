@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files
+.env
+.env.local
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/media/
+/staticfiles/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Data / models (keep tracked examples if any via explicit `git add -f`)
+*.joblib
+*.pkl
