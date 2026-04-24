@@ -35,3 +35,5 @@ Thumbs.db
 # Data / models (keep tracked examples if any via explicit `git add -f`)
 *.joblib
 *.pkl
+prediction/ml/data/*.csv
+prediction/ml/artifacts/*.json

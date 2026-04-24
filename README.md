@@ -1,9 +1,7 @@
 # Plateforme intelligente de prédiction du risque d'AVC
 
 Academic project: a Django web platform that predicts stroke risk (AVC) and
-compares multiple AI models. This repository currently contains **Step 1**:
-the base Django project with PostgreSQL configuration. Frontend pages and the
-AI model are not implemented yet.
+compares multiple AI models.
 
 ## Tech stack
 
@@ -108,11 +106,61 @@ python manage.py createsuperuser
 
 Then visit http://127.0.0.1:8000/admin/ to log in.
 
+## 7. Train the stroke-prediction models
+
+Step 5 ships a standalone training pipeline at `prediction/ml/train_models.py`.
+It trains six classifiers on the public stroke dataset, evaluates them and
+persists the best model + the fitted preprocessing pipeline.
+
+### 7.1 Place the dataset
+
+Download `healthcare-dataset-stroke-data.csv` (the public Kaggle stroke
+dataset — `fedesoriano/stroke-prediction-dataset`) and copy it to:
+
+```
+prediction/ml/data/healthcare-dataset-stroke-data.csv
+```
+
+The CSV is git-ignored on purpose; only the empty `data/` folder is tracked
+via a `.gitkeep` file. Expected columns:
+
+```
+id, gender, age, hypertension, heart_disease, ever_married, work_type,
+Residence_type, avg_glucose_level, bmi, smoking_status, stroke
+```
+
+### 7.2 Run the training script
+
+```bash
+source .venv/bin/activate
+python prediction/ml/train_models.py
+```
+
+Optional flags: `--csv path/to/file.csv`, `--test-size 0.2`, `--random-state 42`.
+
+### 7.3 Generated artifacts
+
+After a successful run the following files are written under
+`prediction/ml/artifacts/` (also git-ignored):
+
+| File                | Description                                           |
+|---------------------|-------------------------------------------------------|
+| `preprocessor.pkl`  | Fitted ColumnTransformer (impute + scale + one-hot).  |
+| `best_model.pkl`    | Best classifier by F1-score on the test set.          |
+| `model_metrics.json`| All six models' metrics, dataset/split sizes, best id.|
+
+Models trained: Logistic Regression, KNN, Decision Tree, Random Forest, SVM,
+Naive Bayes. Stratified train/test split, `zero_division=0` for sklearn
+metrics, and `class_weight="balanced"` is used wherever supported (LR, DT,
+RF, SVM) to handle the strong class imbalance of the dataset.
+
+The script prints a per-model comparison table to the terminal and marks the
+selected best model. Integration into the Django views happens in a later
+step — Step 5 only trains and persists artifacts.
+
 ## Next steps
 
 Upcoming steps (tracked separately):
 
-- Step 2: authentication UI (login / register) and base templates
-- Step 3: dashboard layout + navigation
-- Step 4: prediction form and AVC risk workflow
-- Step 5: AI model training, persistence with `joblib`, and model comparison
+- Step 6: integrate `best_model.pkl` + `preprocessor.pkl` into `/prediction/new/`
+- Step 7: model-comparison page backed by `model_metrics.json`
