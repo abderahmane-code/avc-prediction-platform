@@ -1,0 +1,7 @@
+{% load static %}
+<label class="field{% if wide %} field--wide{% endif %}{% if field.errors %} field--error{% endif %}">
+  <span>{{ field.label }}</span>
+  {{ field }}
+  {% if field.help_text %}<small class="field__help">{{ field.help_text }}</small>{% endif %}
+  {% for error in field.errors %}<small class="field__error">{{ error }}</small>{% endfor %}
+</label>

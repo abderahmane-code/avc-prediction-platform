@@ -129,10 +129,10 @@
 
         <div class="form-actions">
           <button type="reset" class="btn btn--ghost">Réinitialiser</button>
-          <button type="submit" class="btn btn--primary" disabled title="Non connecté au modèle IA pour le moment">
+          <a href="{% url 'prediction:new' %}" class="btn btn--primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
-            Lancer la prédiction
-          </button>
+            Ouvrir le formulaire complet
+          </a>
         </div>
       </form>
     </article>

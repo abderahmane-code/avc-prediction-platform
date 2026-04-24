@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nouvelle prédiction · AVC Predict{% endblock %}
+
+{% block content %}
+  {% if messages %}
+    <div class="alerts" role="status">
+      {% for message in messages %}
+        <div class="alert alert--{{ message.tags|default:'info' }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <article class="card" aria-labelledby="new-pred-title">
+    <header class="card__header">
+      <div>
+        <h2 id="new-pred-title" class="card__title">Nouvelle prédiction</h2>
+        <p class="card__subtitle">
+          Renseignez les caractéristiques cliniques du patient. Les données
+          seront enregistrées dans la base ; l'analyse IA sera intégrée à
+          l'étape suivante.
+        </p>
+      </div>
+      <span class="chip chip--blue">Saisie clinicien</span>
+    </header>
+
+    <form method="post" novalidate class="patient-form" autocomplete="off">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert--error">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-row">
+        {% include "prediction/_field.html" with field=form.gender %}
+        {% include "prediction/_field.html" with field=form.age %}
+        {% include "prediction/_field.html" with field=form.bmi %}
+      </div>
+
+      <div class="form-row">
+        {% include "prediction/_field.html" with field=form.hypertension %}
+        {% include "prediction/_field.html" with field=form.heart_disease %}
+        {% include "prediction/_field.html" with field=form.ever_married %}
+      </div>
+
+      <div class="form-row">
+        {% include "prediction/_field.html" with field=form.work_type %}
+        {% include "prediction/_field.html" with field=form.residence_type %}
+        {% include "prediction/_field.html" with field=form.smoking_status %}
+      </div>
+
+      <div class="form-row">
+        {% include "prediction/_field.html" with field=form.avg_glucose_level wide=True %}
+      </div>
+
+      <div class="form-actions">
+        <a href="{% url 'dashboard:index' %}" class="btn btn--ghost">Annuler</a>
+        <button type="submit" class="btn btn--primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+          Enregistrer et continuer
+        </button>
+      </div>
+    </form>
+  </article>
+{% endblock %}
