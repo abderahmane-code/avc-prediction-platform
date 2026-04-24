@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Résultat · AVC Predict{% endblock %}
+
+{% block content %}
+  <article class="card card--success" aria-labelledby="result-title">
+    <header class="card__header">
+      <div>
+        <h2 id="result-title" class="card__title">Données enregistrées avec succès</h2>
+        <p class="card__subtitle">
+          La prédiction IA sera intégrée dans l'étape suivante.
+        </p>
+      </div>
+      <span class="chip chip--teal">Succès</span>
+    </header>
+
+    <div class="success-banner">
+      <span class="success-banner__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+      </span>
+      <div>
+        <div class="success-banner__title">Patient #{{ patient.pk }} enregistré</div>
+        <div class="success-banner__sub">
+          Créé le {{ patient.created_at|date:"d/m/Y à H:i" }}
+          {% if patient.user %} par {{ patient.user.get_username }}{% endif %}.
+        </div>
+      </div>
+    </div>
+
+    <section class="patient-recap" aria-label="Récapitulatif du patient">
+      <h3 class="patient-recap__title">Récapitulatif</h3>
+      <dl class="patient-recap__grid">
+        <div><dt>Genre</dt><dd>{{ fr.gender }}</dd></div>
+        <div><dt>Âge</dt><dd>{{ patient.age|floatformat:0 }} ans</dd></div>
+        <div><dt>IMC</dt><dd>{{ patient.bmi|floatformat:1 }}</dd></div>
+        <div><dt>Hypertension</dt><dd>{% if patient.hypertension %}Oui{% else %}Non{% endif %}</dd></div>
+        <div><dt>Maladie cardiaque</dt><dd>{% if patient.heart_disease %}Oui{% else %}Non{% endif %}</dd></div>
+        <div><dt>Déjà marié(e)</dt><dd>{% if patient.ever_married %}Oui{% else %}Non{% endif %}</dd></div>
+        <div><dt>Type d'emploi</dt><dd>{{ fr.work_type }}</dd></div>
+        <div><dt>Zone de résidence</dt><dd>{{ fr.residence_type }}</dd></div>
+        <div><dt>Statut tabagique</dt><dd>{{ fr.smoking_status }}</dd></div>
+        <div><dt>Glycémie moyenne</dt><dd>{{ patient.avg_glucose_level|floatformat:1 }} mg/dL</dd></div>
+      </dl>
+    </section>
+
+    <div class="form-actions">
+      <a href="{% url 'dashboard:index' %}" class="btn btn--ghost">Retour au tableau de bord</a>
+      <a href="{% url 'prediction:new' %}" class="btn btn--primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Nouvelle prédiction
+      </a>
+    </div>
+  </article>
+{% endblock %}
