@@ -30,7 +30,10 @@ function init() {
   function series(key, color) {
     return {
       label: key === "roc" ? "ROC-AUC" : key.charAt(0).toUpperCase() + key.slice(1),
-      data: data.map(function (m) { return m[key === "roc" ? "roc_auc" : key]; }),
+      data: data.map(function (m) {
+        var v = m[key === "roc" ? "roc_auc" : key];
+        return v == null ? 0 : v;
+      }),
       backgroundColor: color,
       borderRadius: 6,
       borderSkipped: false,
@@ -79,8 +82,8 @@ function init() {
           ticks: { color: "#64748b", font: { size: 12 } },
         },
         y: {
-          min: 0.8,
-          max: 1,
+          beginAtZero: true,
+          suggestedMax: 1,
           grid: { color: "#e2e8f0" },
           ticks: {
             color: "#64748b",

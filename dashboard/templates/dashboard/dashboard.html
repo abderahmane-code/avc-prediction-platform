@@ -193,7 +193,11 @@
         <h2 id="models-table-title" class="card__title">Comparaison des modèles d'IA</h2>
         <p class="card__subtitle">Mesures calculées sur le jeu de validation. Le meilleur modèle est surligné.</p>
       </div>
-      <span class="chip chip--blue">5 modèles</span>
+      {% if has_models %}
+        <span class="chip chip--blue">{{ models_comparison|length }} modèle{{ models_comparison|length|pluralize:",s" }}</span>
+      {% else %}
+        <span class="chip chip--muted">Aucun</span>
+      {% endif %}
     </header>
     <div class="table-wrap">
       <table class="models-table">
@@ -216,13 +220,20 @@
               <td>{{ m.precision|floatformat:3 }}</td>
               <td>{{ m.recall|floatformat:3 }}</td>
               <td>{{ m.f1|floatformat:3 }}</td>
-              <td>{{ m.roc_auc|floatformat:3 }}</td>
+              <td>{% if m.roc_auc is not None %}{{ m.roc_auc|floatformat:3 }}{% else %}—{% endif %}</td>
               <td>
                 {% if m.is_best %}
                   <span class="badge badge--teal">Meilleur</span>
                 {% else %}
                   <span class="badge badge--muted">Référence</span>
                 {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="models-table__empty">
+                Aucun modèle entraîné pour le moment. Lancez
+                <code>python manage.py train_ai_models</code> pour remplir le tableau.
               </td>
             </tr>
           {% endfor %}
@@ -235,30 +246,28 @@
     <header class="card__header">
       <div>
         <h2 id="performance-chart-title" class="card__title">Comparaison des performances</h2>
-        <p class="card__subtitle">Vue d'ensemble des scores par modèle (données de démonstration).</p>
+        <p class="card__subtitle">Vue d'ensemble des scores par modèle calculés sur le jeu de test.</p>
       </div>
       <span class="chip chip--teal">Visualisation</span>
     </header>
-    <div class="chart-wrap">
-      <canvas id="models-performance-chart" height="110"></canvas>
-    </div>
+    {% if has_models %}
+      <div class="chart-wrap">
+        <canvas id="models-performance-chart" height="110"></canvas>
+      </div>
+    {% else %}
+      <p class="empty-state">
+        Le graphique apparaîtra dès qu'au moins un modèle sera entraîné via
+        <code>python manage.py train_ai_models</code>.
+      </p>
+    {% endif %}
   </section>
 {% endblock %}
 
 {% block scripts %}
+  {{ models_comparison|json_script:"avc-models-data" }}
   <script>
-    window.__AVC_MODELS__ = [
-      {% for m in models_comparison %}
-        {
-          name: "{{ m.name|escapejs }}",
-          accuracy: {{ m.accuracy }},
-          precision: {{ m.precision }},
-          recall: {{ m.recall }},
-          f1: {{ m.f1 }},
-          roc_auc: {{ m.roc_auc }},
-          is_best: {% if m.is_best %}true{% else %}false{% endif %}
-        }{% if not forloop.last %},{% endif %}
-      {% endfor %}
-    ];
+    window.__AVC_MODELS__ = JSON.parse(
+      document.getElementById("avc-models-data").textContent
+    );
   </script>
 {% endblock %}
