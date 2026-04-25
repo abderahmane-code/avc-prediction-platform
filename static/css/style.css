@@ -485,6 +485,45 @@ svg { width: 1em; height: 1em; }
 
 .btn--ghost { background: transparent; color: var(--color-text-muted); border-color: var(--color-border); }
 .btn--ghost:hover { background: var(--color-surface-muted); color: var(--color-text); }
+.btn--ghost[disabled],
+.btn--ghost[aria-disabled="true"] {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.btn--secondary {
+  background: var(--color-teal-soft);
+  color: var(--color-teal);
+  border-color: rgba(13, 148, 136, 0.25);
+}
+.btn--secondary:hover {
+  background: rgba(13, 148, 136, 0.18);
+  color: var(--color-teal);
+}
+
+/* ---------- CTA card ---------- */
+
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.cta-row .btn { flex: 0 0 auto; }
+
+.chip--link {
+  text-decoration: none;
+  cursor: pointer;
+}
+.chip--link:hover { filter: brightness(0.97); }
+
+.chip--inline {
+  margin-left: 6px;
+  font-size: 11px;
+  padding: 2px 8px;
+}
 
 /* ---------- Risk result ---------- */
 
