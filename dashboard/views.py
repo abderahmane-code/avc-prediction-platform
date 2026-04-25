@@ -167,3 +167,117 @@ def dashboard(request):
         "total_predictions": total_predictions,
     }
     return render(request, "dashboard/dashboard.html", context)
+
+
+# --------------------------------------------------------------------------- #
+# Statistics + settings shells (sidebar links).
+# --------------------------------------------------------------------------- #
+
+
+@login_required
+def statistics(request):
+    """User-scoped statistics page rendered at ``/statistiques/``.
+
+    Aggregates :class:`PredictionResult` rows owned by ``request.user`` plus
+    global :class:`AIModelPerformance` info. All counts default to ``0`` so
+    the template renders cleanly when the user has no predictions yet (the
+    ``has_predictions`` flag drives the empty state).
+    """
+    user_predictions = PredictionResult.objects.filter(user=request.user)
+    total = user_predictions.count()
+    high = user_predictions.filter(prediction=True).count()
+    low = total - high
+    avg_proba = user_predictions.aggregate(v=Avg("risk_probability"))["v"] or 0.0
+
+    perfs_count = AIModelPerformance.objects.count()
+    best_perf = AIModelPerformance.objects.filter(is_best_model=True).first()
+
+    if total:
+        high_pct = high / total * 100
+        low_pct = low / total * 100
+    else:
+        high_pct = low_pct = 0.0
+
+    stats = [
+        {
+            "label": "Prédictions totales",
+            "value": f"{total:,}".replace(",", " "),
+            "delta": "Mes prédictions",
+            "icon": "activity",
+            "accent": "blue",
+        },
+        {
+            "label": "Cas à risque élevé",
+            "value": f"{high}",
+            "delta": (
+                f"{high_pct:.1f} % du total".replace(".", ",")
+                if total
+                else "Aucune donnée"
+            ),
+            "icon": "alert",
+            "accent": "red",
+        },
+        {
+            "label": "Cas à risque faible",
+            "value": f"{low}",
+            "delta": (
+                f"{low_pct:.1f} % du total".replace(".", ",")
+                if total
+                else "Aucune donnée"
+            ),
+            "icon": "activity",
+            "accent": "teal",
+        },
+        {
+            "label": "Probabilité moyenne",
+            "value": (
+                f"{avg_proba * 100:.1f} %".replace(".", ",")
+                if total
+                else "—"
+            ),
+            "delta": (
+                "Sur l'ensemble de mes prédictions"
+                if total
+                else "Aucune donnée pour le moment"
+            ),
+            "icon": "trophy",
+            "accent": "blue",
+        },
+    ]
+
+    context = {
+        "page_title": "Statistiques",
+        "active_nav": "stats",
+        "stats": stats,
+        "has_predictions": bool(total),
+        "high_count": high,
+        "low_count": low,
+        "best_model_name": best_perf.model_name if best_perf else None,
+        "best_model_f1": best_perf.f1_score if best_perf else None,
+        "trained_models_count": perfs_count,
+    }
+    return render(request, "dashboard/statistics.html", context)
+
+
+@login_required
+def settings_view(request):
+    """Profile / preferences shell rendered at ``/parametres/``.
+
+    Read-only summary of the current user. Advanced preferences are deferred
+    to a future iteration (a French banner makes this explicit so the page
+    is honest about what it does).
+    """
+    user = request.user
+    if user.is_superuser:
+        account_type = "Administrateur"
+    elif user.is_staff:
+        account_type = "Membre du staff"
+    else:
+        account_type = "Utilisateur"
+
+    context = {
+        "page_title": "Paramètres",
+        "active_nav": "settings",
+        "account_type": account_type,
+    }
+    return render(request, "dashboard/settings.html", context)

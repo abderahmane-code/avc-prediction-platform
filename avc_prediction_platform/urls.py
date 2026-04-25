@@ -17,4 +17,7 @@ urlpatterns = [
     path("modeles/", include("ai_models.urls", namespace="ai_models")),
     # Step 8: prediction history. Lives at the root /historique/ per spec.
     path("historique/", prediction_views.history, name="history"),
+    # Sidebar shells: user statistics + profile/settings (login-protected).
+    path("statistiques/", dashboard_views.statistics, name="statistics"),
+    path("parametres/", dashboard_views.settings_view, name="settings"),
 ]

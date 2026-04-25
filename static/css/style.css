@@ -1722,3 +1722,6 @@ body {
   .landing-hero { padding: 32px 0 16px; }
   .landing-hero__cta .btn { flex: 1 1 auto; justify-content: center; }
 }
+
+/* Settings/profile and statistics shells */
+.muted { color: var(--color-text-muted); font-style: italic; }
