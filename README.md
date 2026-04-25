@@ -189,6 +189,12 @@ Le superutilisateur peut :
 | `/prediction/detail/<result_id>/pdf/` | Owner / staff | **Export PDF** du rapport |
 | `/historique/` | Authentifié | Historique scopé à l'utilisateur (staff voit tout) |
 | `/modeles/comparaison/` | Authentifié | Tableau + graphiques + explication des modèles |
+| `/statistiques/` | Authentifié | Statistiques personnelles + doughnut Chart.js |
+| `/parametres/` | Authentifié | Profil utilisateur + préférences (lecture seule) |
+| `/gestion/` | **Staff/superuser** | Gestion plateforme — synthèse globale |
+| `/gestion/utilisateurs/` | **Staff/superuser** | Liste des utilisateurs + filtres |
+| `/gestion/utilisateurs/<id>/` | **Staff/superuser** | Fiche utilisateur + prédictions récentes |
+| `/gestion/predictions/` | **Staff/superuser** | Toutes les prédictions + filtres + lien PDF |
 | `/admin/` | Staff | Administration Django |
 
 > Les routes « Owner / staff » renvoient **404** si l'utilisateur authentifié n'est ni propriétaire ni staff (pas de fuite d'existence de ligne).
@@ -212,6 +218,36 @@ Implémentation :
 - Module `prediction/pdf_report.py` (ReportLab + Platypus).
 - Vue `prediction.views.detail_pdf`, route nommée `prediction:detail_pdf`.
 - Dépendance : `reportlab>=4.0` (pure Python, aucune dépendance système).
+
+---
+
+## 10bis. Gestion de la plateforme
+
+L'application distingue deux rôles :
+
+| Rôle | Description | Accès |
+|---|---|---|
+| **Utilisateur** | Compte normal créé via `/accounts/register/`. Ne voit que ses propres prédictions. | Pages applicatives uniquement. |
+| **Administrateur** | `is_staff=True` ou `is_superuser=True`. Voit toutes les prédictions et tous les utilisateurs. | + section `/gestion/` + Django admin. |
+
+La barre latérale affiche un item **« Gestion plateforme »** uniquement pour les administrateurs. Les pages de gestion sont en lecture seule (consultation/monitoring) : aucune action destructive (pas de suppression d'utilisateur, pas de réinitialisation de mot de passe). Pour ces opérations, utiliser **Django admin** à `/admin/`.
+
+Pages d'administration disponibles :
+
+- **`/gestion/`** — Tableau de bord administrateur : nombre d'utilisateurs, prédictions totales, cas à risque élevé / faible, modèles entraînés, meilleur modèle, précision moyenne, état de l'export PDF.
+- **`/gestion/utilisateurs/`** — Liste des utilisateurs avec filtres : *Tous*, *Staff uniquement*, *Utilisateurs normaux*, *Actifs uniquement*. Affiche : nom, e-mail, date d'inscription, staff/superuser, nombre de prédictions, dernière connexion, statut.
+- **`/gestion/utilisateurs/<id>/`** — Fiche utilisateur : profil + statistiques (total / risque élevé / risque faible) + 10 dernières prédictions avec lien vers le détail.
+- **`/gestion/predictions/`** — Toutes les prédictions de la plateforme avec filtres *Toutes / Risque élevé / Risque faible*, liens vers le détail et l'export PDF de chaque prédiction.
+
+Un utilisateur normal qui tente d'accéder à `/gestion/` (ou ses sous-routes) reçoit une réponse **403** avec le message **« Accès réservé aux administrateurs. »**.
+
+### Créer un superutilisateur
+
+```bash
+python manage.py createsuperuser
+```
+
+Suivre l'invite pour saisir nom d'utilisateur, e-mail et mot de passe. Le compte créé aura `is_staff=True` et `is_superuser=True` ; la barre latérale affichera **« Gestion plateforme »** dès la connexion.
 
 ---
 

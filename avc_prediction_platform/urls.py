@@ -20,4 +20,6 @@ urlpatterns = [
     # Sidebar shells: user statistics + profile/settings (login-protected).
     path("statistiques/", dashboard_views.statistics, name="statistics"),
     path("parametres/", dashboard_views.settings_view, name="settings"),
+    # Step 16: platform management area (staff/superuser only).
+    path("gestion/", include("management.urls", namespace="management")),
 ]

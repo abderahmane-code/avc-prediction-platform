@@ -268,10 +268,8 @@ def settings_view(request):
     is honest about what it does).
     """
     user = request.user
-    if user.is_superuser:
+    if user.is_staff or user.is_superuser:
         account_type = "Administrateur"
-    elif user.is_staff:
-        account_type = "Membre du staff"
     else:
         account_type = "Utilisateur"
 

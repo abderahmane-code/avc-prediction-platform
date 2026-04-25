@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Accès refusé · AVC Predict{% endblock %}
+
+{% block content %}
+  <article class="card" aria-labelledby="forbidden-title">
+    <header class="card__header">
+      <div>
+        <h2 id="forbidden-title" class="card__title">Accès refusé</h2>
+        <p class="card__subtitle">Cette section est réservée aux administrateurs de la plateforme.</p>
+      </div>
+      <span class="chip chip--red">403</span>
+    </header>
+    <p class="empty-state">Accès réservé aux administrateurs.</p>
+    <div class="form-actions">
+      <a href="{% url 'dashboard:index' %}" class="btn btn--primary">Retour au tableau de bord</a>
+    </div>
+  </article>
+{% endblock %}

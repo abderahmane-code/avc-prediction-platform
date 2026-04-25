@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Utilisateurs · AVC Predict{% endblock %}
+
+{% block content %}
+  <article class="card" aria-labelledby="users-title">
+    <header class="card__header">
+      <div>
+        <h2 id="users-title" class="card__title">Utilisateurs</h2>
+        <p class="card__subtitle">{{ total_count }} utilisateur{{ total_count|pluralize:",s" }} affiché{{ total_count|pluralize:",s" }}.</p>
+      </div>
+      <span class="chip chip--blue">Vue administrateur</span>
+    </header>
+
+    <nav class="filters" aria-label="Filtre des utilisateurs">
+      {% for f in filters %}
+        <a href="{% url 'management:users' %}?filter={{ f.value }}"
+           class="filter-chip {% if f.active %}filter-chip--active{% endif %}"
+           {% if f.active %}aria-current="true"{% endif %}>
+          {{ f.label }}
+        </a>
+      {% endfor %}
+    </nav>
+
+    <div class="table-wrap">
+      <table class="models-table" aria-label="Liste des utilisateurs">
+        <thead>
+          <tr>
+            <th scope="col">Nom d'utilisateur</th>
+            <th scope="col">E-mail</th>
+            <th scope="col">Inscription</th>
+            <th scope="col">Staff</th>
+            <th scope="col">Superuser</th>
+            <th scope="col">Prédictions</th>
+            <th scope="col">Dernière connexion</th>
+            <th scope="col">Statut</th>
+            <th scope="col"><span class="visually-hidden">Action</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+            <tr>
+              <td><strong>{{ u.username }}</strong></td>
+              <td>{% if u.email %}{{ u.email }}{% else %}—{% endif %}</td>
+              <td>{{ u.date_joined|date:"d/m/Y" }}</td>
+              <td>{% if u.is_staff %}<span class="badge badge--low">Oui</span>{% else %}Non{% endif %}</td>
+              <td>{% if u.is_superuser %}<span class="badge badge--low">Oui</span>{% else %}Non{% endif %}</td>
+              <td>{{ u.prediction_count }}</td>
+              <td>{% if u.last_login %}{{ u.last_login|date:"d/m/Y H:i" }}{% else %}—{% endif %}</td>
+              <td>
+                {% if u.is_active %}
+                  <span class="badge badge--low">Actif</span>
+                {% else %}
+                  <span class="badge badge--high">Inactif</span>
+                {% endif %}
+              </td>
+              <td class="models-table__action">
+                <a href="{% url 'management:user_detail' u.id %}" class="btn btn--ghost btn--sm">Détails</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="models-table__empty">Aucun utilisateur ne correspond à ce filtre.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="form-actions">
+      <a href="{% url 'management:dashboard' %}" class="btn btn--ghost">Retour à la gestion</a>
+    </div>
+  </article>
+
+  <p class="medical-disclaimer">Cette application est un projet académique et ne remplace pas un diagnostic médical.</p>
+{% endblock %}

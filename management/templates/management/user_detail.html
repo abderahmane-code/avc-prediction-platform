@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ u.get_username }} · Gestion · AVC Predict{% endblock %}
+
+{% block content %}
+  <article class="card" aria-labelledby="udetail-title">
+    <header class="card__header">
+      <div>
+        <h2 id="udetail-title" class="card__title">{{ u.get_username }}</h2>
+        <p class="card__subtitle">Fiche utilisateur — vue administrateur.</p>
+      </div>
+      <span class="chip chip--blue">{{ account_type }}</span>
+    </header>
+
+    <dl class="patient-recap__grid">
+      <div>
+        <dt>Nom d'utilisateur</dt>
+        <dd>{{ u.get_username }}</dd>
+      </div>
+      <div>
+        <dt>Adresse e-mail</dt>
+        <dd>{% if u.email %}{{ u.email }}{% else %}—{% endif %}</dd>
+      </div>
+      <div>
+        <dt>Date d'inscription</dt>
+        <dd>{{ u.date_joined|date:"d/m/Y" }}</dd>
+      </div>
+      <div>
+        <dt>Dernière connexion</dt>
+        <dd>{% if u.last_login %}{{ u.last_login|date:"d/m/Y H:i" }}{% else %}—{% endif %}</dd>
+      </div>
+      <div>
+        <dt>Statut</dt>
+        <dd>
+          {% if u.is_active %}
+            <span class="badge badge--low">Actif</span>
+          {% else %}
+            <span class="badge badge--high">Inactif</span>
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt>Rôle</dt>
+        <dd>{{ account_type }}</dd>
+      </div>
+    </dl>
+  </article>
+
+  <section class="stat-grid" aria-label="Statistiques de l'utilisateur">
+    <article class="stat-card stat-card--blue">
+      <div class="stat-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <div class="stat-card__body">
+        <div class="stat-card__label">Prédictions totales</div>
+        <div class="stat-card__value">{{ total }}</div>
+        <div class="stat-card__delta">Tous résultats confondus</div>
+      </div>
+    </article>
+    <article class="stat-card stat-card--red">
+      <div class="stat-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      </div>
+      <div class="stat-card__body">
+        <div class="stat-card__label">Cas à risque élevé</div>
+        <div class="stat-card__value">{{ high }}</div>
+        <div class="stat-card__delta">Prédictions classées élevées</div>
+      </div>
+    </article>
+    <article class="stat-card stat-card--teal">
+      <div class="stat-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <div class="stat-card__body">
+        <div class="stat-card__label">Cas à risque faible</div>
+        <div class="stat-card__value">{{ low }}</div>
+        <div class="stat-card__delta">Prédictions classées faibles</div>
+      </div>
+    </article>
+  </section>
+
+  <article class="card" aria-labelledby="udetail-recent-title">
+    <header class="card__header">
+      <div>
+        <h2 id="udetail-recent-title" class="card__title">Prédictions récentes</h2>
+        <p class="card__subtitle">Les 10 dernières prédictions de cet utilisateur.</p>
+      </div>
+      <span class="chip chip--blue">{{ total }} au total</span>
+    </header>
+
+    <div class="table-wrap">
+      <table class="models-table" aria-label="Prédictions récentes">
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Âge</th>
+            <th scope="col">Modèle</th>
+            <th scope="col">Résultat</th>
+            <th scope="col">Probabilité</th>
+            <th scope="col"><span class="visually-hidden">Action</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recent %}
+            <tr>
+              <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ r.age|floatformat:0 }} ans</td>
+              <td>{{ r.model_name }}</td>
+              <td>
+                {% if r.is_high %}
+                  <span class="badge badge--high">Risque élevé</span>
+                {% else %}
+                  <span class="badge badge--low">Risque faible</span>
+                {% endif %}
+              </td>
+              <td>{{ r.probability_pct|floatformat:1 }} %</td>
+              <td class="models-table__action">
+                <a href="{% url 'prediction:detail' r.id %}" class="btn btn--ghost btn--sm">Détails</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="models-table__empty">Aucune prédiction enregistrée pour cet utilisateur.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="form-actions">
+      <a href="{% url 'management:users' %}" class="btn btn--ghost">Retour à la liste</a>
+    </div>
+  </article>
+
+  <p class="medical-disclaimer">Cette application est un projet académique et ne remplace pas un diagnostic médical.</p>
+{% endblock %}
