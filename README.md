@@ -557,3 +557,78 @@ python manage.py runserver
 #   GET /dashboard/                → still works
 #   /prediction/new/, /historique/, /modeles/comparaison/ → still work
 ```
+
+## 15. PDF report export (Step 14)
+
+Each prediction can be exported as a one-page A4 PDF report from the detail
+page.
+
+### 15.1 Route
+
+`GET /prediction/detail/<id>/pdf/` (URL name `prediction:detail_pdf`).
+
+The route is **login-protected** and uses the same access rules as
+`prediction:detail`:
+- the prediction's owner can export their own report,
+- staff / superusers can export any report,
+- everyone else gets a 404 (no leak of other users' rows),
+- a missing id returns 404.
+
+The response is `Content-Type: application/pdf` with
+`Content-Disposition: attachment; filename="rapport-prediction-<id>.pdf"`.
+
+### 15.2 Contents
+
+The PDF includes all the spec items, in this order:
+- AVC Predict brand bar
+- "RAPPORT CLINIQUE" eyebrow + title `Rapport de prédiction AVC`
+- Project name `Plateforme intelligente de prédiction du risque d'AVC`
+- Identifier, date, clinician
+- **Données du patient** table (genre, âge, hypertension, maladie cardiaque,
+  déjà marié(e), type d'emploi, zone de résidence, glycémie moyenne, IMC,
+  statut tabagique)
+- **Résultat de la prédiction** (niveau de risque — red/teal accent —,
+  probabilité, modèle utilisé)
+- **Recommandation clinique**
+- **Avertissement médical** card —
+  `Cette application est un projet académique et ne remplace pas un
+  diagnostic médical.`
+- Page footer with the same disclaimer + page number on every page.
+
+### 15.3 Dependency
+
+Uses [ReportLab](https://www.reportlab.com/) — pure Python, no system
+deps, and bundled in `requirements.txt`:
+
+```
+reportlab>=4.0
+```
+
+WeasyPrint was considered but rejected: it depends on Cairo / Pango /
+GdkPixbuf system libs that are not always present in production / CI
+environments.
+
+### 15.4 Files touched
+
+- `prediction/pdf_report.py` — **new** rendering module (ReportLab + Platypus
+  flowables).
+- `prediction/views.py` — added `detail_pdf` view.
+- `prediction/urls.py` — added `prediction:detail_pdf`.
+- `prediction/templates/prediction/detail.html` — added the
+  `Exporter le rapport PDF` button.
+- `requirements.txt` — added `reportlab>=4.0`.
+- `README.md` — this section.
+
+### 15.5 Verifying locally
+
+```bash
+pip install -r requirements.txt
+python manage.py check
+python manage.py migrate
+python manage.py runserver
+# Login as a normal user → /prediction/detail/<id>/
+# Click "Exporter le rapport PDF"
+# A PDF is downloaded named rapport-prediction-<id>.pdf
+# As a different normal user → /prediction/detail/<id>/pdf/ returns 404
+# As a superuser → can export any prediction's report
+```
