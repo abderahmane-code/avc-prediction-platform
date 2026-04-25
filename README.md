@@ -108,9 +108,16 @@ Then visit http://127.0.0.1:8000/admin/ to log in.
 
 ## 7. Train the stroke-prediction models
 
-Step 5 ships a standalone training pipeline at `prediction/ml/train_models.py`.
-It trains six classifiers on the public stroke dataset, evaluates them and
-persists the best model + the fitted preprocessing pipeline.
+The repository ships two equivalent ways to train the six classifiers:
+
+* `python prediction/ml/train_models.py` — pure script, writes joblib +
+  JSON artifacts only.
+* `python manage.py train_ai_models` — Django management command that does
+  the same training **and** refreshes the `AIModelPerformance` rows in
+  PostgreSQL so the dashboard can read them.
+
+Use the management command for normal operation; the script is kept for
+quick offline runs without the Django context.
 
 ### 7.1 Place the dataset
 
@@ -129,38 +136,59 @@ id, gender, age, hypertension, heart_disease, ever_married, work_type,
 Residence_type, avg_glucose_level, bmi, smoking_status, stroke
 ```
 
-### 7.2 Run the training script
+If the file is missing, both entry points print:
+
+> `Dataset not found. Please place healthcare-dataset-stroke-data.csv inside prediction/ml/data/`
+
+### 7.2 Run the training command
 
 ```bash
 source .venv/bin/activate
-python prediction/ml/train_models.py
+python manage.py train_ai_models
 ```
 
 Optional flags: `--csv path/to/file.csv`, `--test-size 0.2`, `--random-state 42`.
 
-### 7.3 Generated artifacts
+The command:
 
-After a successful run the following files are written under
-`prediction/ml/artifacts/` (also git-ignored):
+1. Trains Logistic Regression, KNN, Decision Tree, Random Forest, SVM and
+   Naive Bayes (stratified split, `zero_division=0` everywhere, and
+   `class_weight="balanced"` for LR / DT / RF / SVM).
+2. Saves three artifacts under `prediction/ml/artifacts/`:
+   - `preprocessor.pkl` — fitted ColumnTransformer (impute + scale + one-hot)
+   - `best_model.pkl` — best classifier by F1-score on the test set
+   - `model_metrics.json` — all six models' metrics + dataset/split metadata
+3. Wraps the database update in an `atomic()` transaction: deletes every
+   existing `AIModelPerformance` row and inserts one row per trained model,
+   flagging the F1-best model with `is_best_model=True`.
 
-| File                | Description                                           |
-|---------------------|-------------------------------------------------------|
-| `preprocessor.pkl`  | Fitted ColumnTransformer (impute + scale + one-hot).  |
-| `best_model.pkl`    | Best classifier by F1-score on the test set.          |
-| `model_metrics.json`| All six models' metrics, dataset/split sizes, best id.|
+### 7.3 Verify in Django admin
 
-Models trained: Logistic Regression, KNN, Decision Tree, Random Forest, SVM,
-Naive Bayes. Stratified train/test split, `zero_division=0` for sklearn
-metrics, and `class_weight="balanced"` is used wherever supported (LR, DT,
-RF, SVM) to handle the strong class imbalance of the dataset.
+```bash
+python manage.py runserver
+# then open http://127.0.0.1:8000/admin/ai_models/aimodelperformance/
+```
 
-The script prints a per-model comparison table to the terminal and marks the
-selected best model. Integration into the Django views happens in a later
-step — Step 5 only trains and persists artifacts.
+You should see exactly six rows after a successful training run, with
+exactly one row marked as `Is best model`.
+
+### 7.4 Dashboard
+
+`http://127.0.0.1:8000/dashboard/` reads `AIModelPerformance` from
+PostgreSQL and renders:
+
+* the `Meilleur modèle` and `Précision moyenne` stat cards,
+* the per-model comparison table (sorted by best, then F1),
+* the Chart.js bar chart with per-model Accuracy / Precision / Recall / F1 /
+  ROC-AUC.
+
+When the table is empty (e.g. before the first training run), every metric
+falls back to a `—` placeholder and a hint asking the user to run
+`python manage.py train_ai_models`. The page still renders correctly.
 
 ## Next steps
 
 Upcoming steps (tracked separately):
 
-- Step 6: integrate `best_model.pkl` + `preprocessor.pkl` into `/prediction/new/`
-- Step 7: model-comparison page backed by `model_metrics.json`
+- Step 7: integrate `best_model.pkl` + `preprocessor.pkl` into `/prediction/new/`
+- Step 8: dedicated model-comparison page backed by `AIModelPerformance`

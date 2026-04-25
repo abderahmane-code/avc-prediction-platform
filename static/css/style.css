@@ -391,6 +391,36 @@ svg { width: 1em; height: 1em; }
 .chip--high { background: var(--color-red-soft); color: var(--color-red); }
 .chip--moderate { background: var(--color-amber-soft); color: var(--color-amber); }
 .chip--low { background: var(--color-teal-soft); color: var(--color-teal); }
+.chip--muted { background: var(--color-surface-muted); color: var(--color-text-muted); }
+
+.models-table__empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  padding: 28px 16px;
+}
+.models-table__empty code {
+  background: var(--color-surface-muted);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+.empty-state {
+  margin: 0;
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.empty-state code {
+  background: var(--color-surface-muted);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--color-text);
+}
 
 .two-col {
   display: grid;

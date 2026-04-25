@@ -216,7 +216,106 @@ def print_table(rows: Dict[str, Dict[str, float]], best_name: str) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Entry point
+# Reusable orchestration
+# --------------------------------------------------------------------------- #
+
+def train_and_persist(
+    csv_path: Path = DEFAULT_CSV,
+    test_size: float = 0.2,
+    random_state: int = 42,
+    verbose: bool = True,
+) -> dict:
+    """Train all models on ``csv_path``, save artifacts, return the metrics payload.
+
+    The returned payload is the same structure that gets written to
+    ``model_metrics.json`` and is the public contract used by callers such as
+    the ``train_ai_models`` Django management command.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``csv_path`` does not exist (re-raised from :func:`load_dataset`).
+    """
+    log = print if verbose else (lambda *a, **k: None)
+
+    log(f"[1/5] Loading dataset from {csv_path} ...")
+    df = load_dataset(csv_path)
+    log(f"      rows={len(df)}  positives={int(df[TARGET].sum())} "
+        f"({df[TARGET].mean()*100:.2f}%)  features={len(ALL_FEATURES)}")
+
+    X = df[ALL_FEATURES]
+    y = df[TARGET].astype(int)
+
+    log(f"[2/5] Stratified train/test split (test_size={test_size}) ...")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, stratify=y, random_state=random_state
+    )
+    log(f"      train={len(X_train)}  test={len(X_test)}  "
+        f"train_pos={int(y_train.sum())}  test_pos={int(y_test.sum())}")
+
+    log("[3/5] Fitting preprocessor (impute + scale + one-hot) ...")
+    preprocessor = build_preprocessor()
+    X_train_t = preprocessor.fit_transform(X_train)
+    X_test_t = preprocessor.transform(X_test)
+    log(f"      transformed shape: {X_train_t.shape}")
+
+    log("[4/5] Training models ...")
+    models = get_models(random_state=random_state)
+    fitted: Dict[str, object] = {}
+    metrics: Dict[str, Dict[str, float]] = {}
+    for name, model in models.items():
+        t0 = time.time()
+        model.fit(X_train_t, y_train)
+        m, _ = evaluate(model, X_test_t, y_test)
+        m["fit_time_seconds"] = round(time.time() - t0, 3)
+        fitted[name] = model
+        metrics[name] = m
+        roc_str = "n/a" if m["roc_auc"] is None else f"{m['roc_auc']:.4f}"
+        log(f"      - {name:<22} f1={m['f1_score']:.4f}  acc={m['accuracy']:.4f}  "
+            f"roc_auc={roc_str}  ({m['fit_time_seconds']}s)")
+
+    best_name = max(metrics.keys(), key=lambda n: metrics[n]["f1_score"])
+    best_model = fitted[best_name]
+
+    log("[5/5] Saving artifacts ...")
+    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+    joblib.dump(preprocessor, PREPROCESSOR_PATH)
+    joblib.dump(best_model, BEST_MODEL_PATH)
+
+    payload = {
+        "best_model": best_name,
+        "best_model_path": str(BEST_MODEL_PATH.relative_to(ML_DIR.parent.parent)),
+        "preprocessor_path": str(PREPROCESSOR_PATH.relative_to(ML_DIR.parent.parent)),
+        "dataset": {
+            "csv_path": str(csv_path),
+            "rows": int(len(df)),
+            "positives": int(df[TARGET].sum()),
+            "positive_rate": float(df[TARGET].mean()),
+        },
+        "split": {
+            "test_size": float(test_size),
+            "train_rows": int(len(X_train)),
+            "test_rows": int(len(X_test)),
+            "stratified": True,
+            "random_state": int(random_state),
+        },
+        "features": {
+            "numeric": NUMERIC_FEATURES,
+            "categorical": CATEGORICAL_FEATURES,
+            "binary": BINARY_FEATURES,
+        },
+        "models": metrics,
+    }
+    METRICS_PATH.write_text(json.dumps(payload, indent=2))
+
+    log(f"      preprocessor -> {PREPROCESSOR_PATH}")
+    log(f"      best_model   -> {BEST_MODEL_PATH}")
+    log(f"      metrics      -> {METRICS_PATH}")
+    return payload
+
+
+# --------------------------------------------------------------------------- #
+# CLI entry point
 # --------------------------------------------------------------------------- #
 
 def main(argv=None) -> int:
@@ -235,82 +334,15 @@ def main(argv=None) -> int:
     )
     args = parser.parse_args(argv)
 
-    print(f"[1/5] Loading dataset from {args.csv} ...")
-    df = load_dataset(args.csv)
-    print(f"      rows={len(df)}  positives={int(df[TARGET].sum())} "
-          f"({df[TARGET].mean()*100:.2f}%)  features={len(ALL_FEATURES)}")
-
-    X = df[ALL_FEATURES]
-    y = df[TARGET].astype(int)
-
-    print(f"[2/5] Stratified train/test split (test_size={args.test_size}) ...")
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=args.test_size, stratify=y, random_state=args.random_state
+    payload = train_and_persist(
+        csv_path=args.csv,
+        test_size=args.test_size,
+        random_state=args.random_state,
+        verbose=True,
     )
-    print(f"      train={len(X_train)}  test={len(X_test)}  "
-          f"train_pos={int(y_train.sum())}  test_pos={int(y_test.sum())}")
-
-    print("[3/5] Fitting preprocessor (impute + scale + one-hot) ...")
-    preprocessor = build_preprocessor()
-    X_train_t = preprocessor.fit_transform(X_train)
-    X_test_t = preprocessor.transform(X_test)
-    print(f"      transformed shape: {X_train_t.shape}")
-
-    print("[4/5] Training models ...")
-    models = get_models(random_state=args.random_state)
-    fitted: Dict[str, object] = {}
-    metrics: Dict[str, Dict[str, float]] = {}
-    for name, model in models.items():
-        t0 = time.time()
-        model.fit(X_train_t, y_train)
-        m, _ = evaluate(model, X_test_t, y_test)
-        m["fit_time_seconds"] = round(time.time() - t0, 3)
-        fitted[name] = model
-        metrics[name] = m
-        roc_str = "n/a" if m["roc_auc"] is None else f"{m['roc_auc']:.4f}"
-        print(f"      - {name:<22} f1={m['f1_score']:.4f}  acc={m['accuracy']:.4f}  "
-              f"roc_auc={roc_str}  ({m['fit_time_seconds']}s)")
-
-    best_name = max(metrics.keys(), key=lambda n: metrics[n]["f1_score"])
-    best_model = fitted[best_name]
-
-    print("[5/5] Saving artifacts ...")
-    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
-    joblib.dump(preprocessor, PREPROCESSOR_PATH)
-    joblib.dump(best_model, BEST_MODEL_PATH)
-
-    payload = {
-        "best_model": best_name,
-        "best_model_path": str(BEST_MODEL_PATH.relative_to(ML_DIR.parent.parent)),
-        "preprocessor_path": str(PREPROCESSOR_PATH.relative_to(ML_DIR.parent.parent)),
-        "dataset": {
-            "csv_path": str(args.csv),
-            "rows": int(len(df)),
-            "positives": int(df[TARGET].sum()),
-            "positive_rate": float(df[TARGET].mean()),
-        },
-        "split": {
-            "test_size": float(args.test_size),
-            "train_rows": int(len(X_train)),
-            "test_rows": int(len(X_test)),
-            "stratified": True,
-            "random_state": int(args.random_state),
-        },
-        "features": {
-            "numeric": NUMERIC_FEATURES,
-            "categorical": CATEGORICAL_FEATURES,
-            "binary": BINARY_FEATURES,
-        },
-        "models": metrics,
-    }
-    METRICS_PATH.write_text(json.dumps(payload, indent=2))
-
-    print(f"      preprocessor -> {PREPROCESSOR_PATH}")
-    print(f"      best_model   -> {BEST_MODEL_PATH}")
-    print(f"      metrics      -> {METRICS_PATH}")
     print()
     print("Model comparison (test set):")
-    print_table(metrics, best_name)
+    print_table(payload["models"], payload["best_model"])
     return 0
 
 
