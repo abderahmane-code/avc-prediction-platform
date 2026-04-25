@@ -186,9 +186,55 @@ When the table is empty (e.g. before the first training run), every metric
 falls back to a `—` placeholder and a hint asking the user to run
 `python manage.py train_ai_models`. The page still renders correctly.
 
+## 8. Live prediction workflow
+
+`/prediction/new/` is wired to the trained artifacts. On a valid submission:
+
+1. The patient record is saved to `PatientData` (with the current user when
+   authenticated).
+2. The view loads `prediction/ml/artifacts/preprocessor.pkl` and
+   `prediction/ml/artifacts/best_model.pkl` (cached in-process and invalidated
+   automatically when the files change on disk, so re-running the training
+   command picks up immediately without a server restart).
+3. The patient is mapped to the exact training schema — including the
+   `residence_type → Residence_type` rename and `ever_married` boolean →
+   `"Yes"/"No"` mapping — and scored.
+4. Probability is read from `predict_proba(X)[:, 1]` when available, with a
+   `decision_function` fallback that is squashed through a logistic, and a
+   final `predict`-only fallback returning `1.0` / `0.0`.
+5. A `PredictionResult` row is persisted with the model name (read from
+   `model_metrics.json`), the boolean prediction, the French risk label,
+   the probability and the French recommendation.
+6. The user is redirected to `/prediction/result/<id>/`, which displays a
+   circular probability gauge, the `Risque d'AVC : Élevé` / `Risque d'AVC :
+   Faible` summary, the model name, the recommendation, and the medical
+   disclaimer.
+
+### 8.1 Missing-model graceful fallback
+
+If `best_model.pkl` or `preprocessor.pkl` is absent (e.g. before the very
+first training run, or when the artifacts were deleted), the form **still
+saves** the `PatientData` row but **does not** create a `PredictionResult`.
+The result page then renders an inline error block with the exact message:
+
+> Le modèle IA n'est pas encore entraîné. Veuillez exécuter la commande :
+> `python manage.py train_ai_models`
+
+No 500 error, no crash — only the prediction half is skipped.
+
+### 8.2 Dashboard live counts
+
+`/dashboard/` reads real counts from PostgreSQL:
+
+* **Prédictions totales** — number of `PredictionResult` rows (falls back to
+  `PatientData.objects.count()` only when no predictions exist yet).
+* **Cas à risque élevé** — `PredictionResult.objects.filter(prediction=True).count()`
+  with the percentage of total predictions.
+* **Meilleur modèle** / **Précision moyenne** — read from `AIModelPerformance`
+  (Step 6).
+
 ## Next steps
 
 Upcoming steps (tracked separately):
 
-- Step 7: integrate `best_model.pkl` + `preprocessor.pkl` into `/prediction/new/`
 - Step 8: dedicated model-comparison page backed by `AIModelPerformance`

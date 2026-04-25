@@ -4,32 +4,92 @@
 {% block title %}Résultat · AVC Predict{% endblock %}
 
 {% block content %}
-  <article class="card card--success" aria-labelledby="result-title">
-    <header class="card__header">
-      <div>
-        <h2 id="result-title" class="card__title">Données enregistrées avec succès</h2>
-        <p class="card__subtitle">
-          La prédiction IA sera intégrée dans l'étape suivante.
-        </p>
-      </div>
-      <span class="chip chip--teal">Succès</span>
-    </header>
+  {% if risk %}
+    <article class="card {% if risk.is_high %}card--risk-high{% else %}card--risk-low{% endif %}" aria-labelledby="result-title">
+      <header class="card__header">
+        <div>
+          <h2 id="result-title" class="card__title">Résultat de la prédiction</h2>
+          <p class="card__subtitle">
+            Calculé par le modèle <strong>{{ risk.model_name }}</strong>
+            le {{ risk.created_at|date:"d/m/Y à H:i" }}.
+          </p>
+        </div>
+        {% if risk.is_high %}
+          <span class="chip chip--high">Risque élevé</span>
+        {% else %}
+          <span class="chip chip--low">Risque faible</span>
+        {% endif %}
+      </header>
 
-    <div class="success-banner">
-      <span class="success-banner__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
-      </span>
-      <div>
-        <div class="success-banner__title">Patient #{{ patient.pk }} enregistré</div>
-        <div class="success-banner__sub">
-          Créé le {{ patient.created_at|date:"d/m/Y à H:i" }}
-          {% if patient.user %} par {{ patient.user.get_username }}{% endif %}.
+      <div class="risk-result">
+        <div class="risk-gauge" role="img"
+             aria-label="Probabilité estimée d'AVC : {{ risk.probability_pct_int }} pour cent">
+          <svg viewBox="0 0 120 120" class="risk-gauge__svg">
+            <circle cx="60" cy="60" r="52" class="risk-gauge__track" />
+            <circle cx="60" cy="60" r="52" class="risk-gauge__value"
+                    style="stroke-dasharray: {{ risk.probability_pct_int }} 1000;"
+                    pathLength="100" />
+          </svg>
+          <div class="risk-gauge__text">
+            <div class="risk-gauge__percent">{{ risk.probability|floatformat:2 }}</div>
+            <div class="risk-gauge__label">Probabilité</div>
+          </div>
+        </div>
+
+        <div class="risk-summary">
+          <div class="risk-summary__line">
+            <span class="risk-summary__label">Risque d'AVC</span>
+            <span class="risk-summary__value risk-summary__value--{% if risk.is_high %}high{% else %}low{% endif %}">
+              {% if risk.is_high %}Élevé{% else %}Faible{% endif %}
+            </span>
+          </div>
+          <div class="risk-summary__line">
+            <span class="risk-summary__label">Modèle utilisé</span>
+            <span class="risk-summary__value">{{ risk.model_name }}</span>
+          </div>
+          <div class="risk-summary__line">
+            <span class="risk-summary__label">Probabilité estimée</span>
+            <span class="risk-summary__value">{{ risk.probability_pct|floatformat:1 }} %</span>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div class="recommendation {% if risk.is_high %}recommendation--high{% endif %}">
+        <div class="recommendation__title">Recommandation clinique</div>
+        <p class="recommendation__text">{{ risk.recommendation }}</p>
+      </div>
+    </article>
+  {% else %}
+    <article class="card" aria-labelledby="result-title">
+      <header class="card__header">
+        <div>
+          <h2 id="result-title" class="card__title">Données enregistrées</h2>
+          <p class="card__subtitle">
+            Le patient a bien été enregistré. Le modèle d'IA n'a pas pu être
+            interrogé.
+          </p>
+        </div>
+        <span class="chip chip--muted">En attente</span>
+      </header>
+
+      <div class="alert alert--error" role="alert">
+        <strong>{{ missing_model_message }}</strong>
+      </div>
+    </article>
+  {% endif %}
+
+  <article class="card" aria-labelledby="recap-title">
+    <header class="card__header">
+      <div>
+        <h2 id="recap-title" class="card__title">Récapitulatif du patient</h2>
+        <p class="card__subtitle">Patient #{{ patient.pk }} —
+          créé le {{ patient.created_at|date:"d/m/Y à H:i" }}{% if patient.user %} par {{ patient.user.get_username }}{% endif %}.
+        </p>
+      </div>
+      <span class="chip chip--blue">Données saisies</span>
+    </header>
 
     <section class="patient-recap" aria-label="Récapitulatif du patient">
-      <h3 class="patient-recap__title">Récapitulatif</h3>
       <dl class="patient-recap__grid">
         <div><dt>Genre</dt><dd>{{ fr.gender }}</dd></div>
         <div><dt>Âge</dt><dd>{{ patient.age|floatformat:0 }} ans</dd></div>
@@ -43,6 +103,8 @@
         <div><dt>Glycémie moyenne</dt><dd>{{ patient.avg_glucose_level|floatformat:1 }} mg/dL</dd></div>
       </dl>
     </section>
+
+    <p class="medical-disclaimer">Cette application ne remplace pas un diagnostic médical.</p>
 
     <div class="form-actions">
       <a href="{% url 'dashboard:index' %}" class="btn btn--ghost">Retour au tableau de bord</a>

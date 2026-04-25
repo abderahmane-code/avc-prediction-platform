@@ -37,3 +37,4 @@ Thumbs.db
 *.pkl
 prediction/ml/data/*.csv
 prediction/ml/artifacts/*.json
+nohup.out
