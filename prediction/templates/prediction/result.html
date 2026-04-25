@@ -108,6 +108,12 @@
 
     <div class="form-actions">
       <a href="{% url 'dashboard:index' %}" class="btn btn--ghost">Retour au tableau de bord</a>
+      {% if prediction %}
+        <a href="{% url 'prediction:detail_pdf' prediction.pk %}" class="btn btn--secondary" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15h6"/><path d="M9 18h6"/><path d="M9 12h2"/></svg>
+          Exporter le rapport PDF
+        </a>
+      {% endif %}
       <a href="{% url 'prediction:new' %}" class="btn btn--primary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
         Nouvelle prédiction
