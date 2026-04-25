@@ -1,14 +1,25 @@
 function init() {
   "use strict";
 
-  // Sidebar toggle (mobile)
+  // Sidebar toggle (mobile) + backdrop
   var menuBtn = document.querySelector(".topbar__menu");
   var sidebar = document.querySelector(".sidebar");
+  var backdrop = document.querySelector(".sidebar-backdrop");
+  function closeSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.remove("sidebar--open");
+    if (backdrop) backdrop.classList.remove("is-active");
+  }
   if (menuBtn && sidebar) {
     menuBtn.addEventListener("click", function () {
-      sidebar.classList.toggle("sidebar--open");
+      var open = sidebar.classList.toggle("sidebar--open");
+      if (backdrop) backdrop.classList.toggle("is-active", open);
     });
   }
+  if (backdrop) backdrop.addEventListener("click", closeSidebar);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeSidebar();
+  });
 
   // Performance chart
   var canvas = document.getElementById("models-performance-chart");

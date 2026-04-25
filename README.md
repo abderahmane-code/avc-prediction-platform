@@ -416,3 +416,70 @@ python manage.py runserver
 #   then reload /modeles/comparaison/
 ```
 
+## 13. UI polish (Step 12)
+
+Step 12 is a CSS / asset-only sweep — no backend, view, URL, template logic, or
+inference change. The goal was to bring every page closer to a polished medical
+AI dashboard look: consistent depth, spacing, typography, focus states, and
+mobile behaviour.
+
+### 13.1 What changed visually
+
+- **Background** — soft radial wash (blue + teal) on the app body for depth.
+- **Sidebar active state** — left-edge accent bar (gradient blue → teal) and
+  bolder weight on the current page; clearer visual anchor than just the
+  filled blue pill.
+- **Brand mark** — same gradient logo, now with a subtle elevated shadow.
+- **Topbar** — `Bonjour, <username>` rendered as a soft pill (rounded
+  surface-muted background) instead of inline text; on screens narrower than
+  ~1100px the pill collapses so the title + actions stay legible.
+- **Stat cards** — gradient icon tiles (rather than flat soft-colour blocks)
+  and a 1px hover lift with a stronger border / shadow.
+- **Primary buttons** — subtle 180° gradient + a coloured drop-shadow that
+  matches the brand blue. Focus-visible state is now a 3px ring across all
+  buttons / chips / inputs.
+- **Tables** — alternating row tint (`nth-child(even)`) and sticky `<thead>`
+  inside the scroll wrap, so the column labels stay visible while scrolling
+  the comparison and history tables.
+- **Risk gauge** — soft drop-shadow halo behind the circular indicator on
+  the result and detail pages (no change to data).
+- **Mobile sidebar** — adds a backdrop element + JS toggling. Tapping the
+  backdrop or pressing Escape closes the drawer.
+- **Auth hero** — keeps the existing dark teal/blue gradient but adds a
+  subtle dotted texture overlay for a more "clinical" feel; the right-hand
+  card is unchanged.
+- Various smaller tweaks: pill chips on the active filter, larger tap
+  targets, refined disclaimer footer spacing, search field grows on
+  ≥1280px screens.
+
+### 13.2 Files touched
+
+- `static/css/style.css` — appended a `Step 12: visual polish` block (~150
+  lines) at the end of the file, plus a few tweaks to existing rules. No
+  existing rule was deleted.
+- `static/js/main.js` — small extension of the mobile sidebar toggle to
+  manage the new backdrop and Escape-to-close.
+- `templates/base.html` — added the `<div class="sidebar-backdrop">` element.
+
+No template, view, model, URL, training, or inference code was modified.
+
+### 13.3 Verifying locally
+
+```bash
+python manage.py check
+python manage.py migrate
+python manage.py runserver
+# Login as any user, then visit each page and compare to the screenshots in PR:
+#   /dashboard/                  → polished stat cards + recent + comparison + chart
+#   /prediction/new/             → polished form
+#   /prediction/result/<id>/     → circular gauge with halo, recommendation card
+#   /prediction/detail/<id>/     → same polish + breadcrumb + patient recap
+#   /historique/                 → filter chips + alternating rows + badges
+#   /modeles/comparaison/        → best-model card + comparison + 2 Chart.js charts
+#   /accounts/login/             → split hero + dotted overlay + card
+#   /accounts/register/          → same auth shell
+# Resize Chrome to ~480px wide → sidebar collapses; click hamburger → drawer slides
+# in with backdrop; tap backdrop or press Escape to close.
+```
+
+
