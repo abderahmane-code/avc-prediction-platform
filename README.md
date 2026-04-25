@@ -233,8 +233,27 @@ No 500 error, no crash — only the prediction half is skipped.
 * **Meilleur modèle** / **Précision moyenne** — read from `AIModelPerformance`
   (Step 6).
 
+## 9. Prediction history
+
+`/historique/` lists every saved `PredictionResult` (most recent first) with a
+table covering Date / Âge / Genre / Hypertension / Maladie cardiaque /
+Glucose / IMC / Modèle utilisé / Résultat / Probabilité, plus a `Détails`
+button that opens `/prediction/detail/<id>/`. Quick filters
+(`Tous` / `Risque élevé` / `Risque faible`) are wired to the
+`?risk=high|low|all` querystring. The `Historique` sidebar entry is the
+canonical entry point and is highlighted as active on both pages.
+
+When no `PredictionResult` rows exist (e.g. fresh DB), the page renders a
+clean empty state with the exact French message
+`Aucune prédiction enregistrée pour le moment.` instead of crashing.
+
+The detail page reuses the same probability gauge, risk-coloured chip,
+recommendation block, patient recap, and medical disclaimer as the
+post-submission `/prediction/result/<id>/` page — but is anchored on the
+`PredictionResult` id so it stays addressable from the history table.
+
 ## Next steps
 
 Upcoming steps (tracked separately):
 
-- Step 8: dedicated model-comparison page backed by `AIModelPerformance`
+- Dedicated model-comparison page backed by `AIModelPerformance`
