@@ -12,6 +12,8 @@ urlpatterns = [
     path("accounts/", include("accounts.urls", namespace="accounts")),
     path("dashboard/", include("dashboard.urls", namespace="dashboard")),
     path("prediction/", include("prediction.urls", namespace="prediction")),
+    # Step 11: dedicated AI-model comparison page at /modeles/comparaison/.
+    path("modeles/", include("ai_models.urls", namespace="ai_models")),
     # Step 8: prediction history. Lives at the root /historique/ per spec.
     path("historique/", prediction_views.history, name="history"),
 ]

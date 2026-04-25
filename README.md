@@ -363,8 +363,56 @@ python manage.py runserver
 # 6. Try /dashboard/ logged out → redirected to /accounts/login/
 ```
 
-## Next steps
+## 12. Model comparison page (Step 11)
 
-Upcoming steps (tracked separately):
+Step 11 introduces a dedicated, login-protected page that exposes every row
+of `AIModelPerformance` in detail.
 
-- Dedicated model-comparison page backed by `AIModelPerformance`
+### 12.1 URL & layout
+
+| URL | View | Notes |
+| --- | --- | --- |
+| `/modeles/comparaison/` | `ai_models.views.comparison` | `@login_required` — anonymous users land on `/accounts/login/?next=…`. |
+
+The page is composed of:
+
+1. **CTA card** — `Nouvelle prédiction` (blue) + `Voir l'historique` (teal).
+2. **Best-model spotlight** — trophy icon, model name, F1-score, `Meilleur modèle` badge.
+3. **Tableau comparatif** — `Modèle / Accuracy / Précision / Rappel / F1-score / ROC-AUC / Statut`. The best-model row is highlighted via `models-table__row--best` and prefixed with a small trophy.
+4. **F1-score par modèle** — Chart.js bar chart (best model in teal, others in slate grey).
+5. **Toutes les métriques** — Chart.js grouped bar chart with Accuracy / Précision / Rappel / F1-score / ROC-AUC for every model.
+6. **Comment lire ces métriques ?** — three short French explainers: why Recall matters in medical prediction, why F1 balances precision & recall, and why the best model was selected.
+
+### 12.2 Empty state
+
+If `AIModelPerformance` has zero rows, the page replaces the table + charts +
+explainer with a single card showing the exact spec text:
+
+> Aucun modèle IA entraîné pour le moment. Exécutez la commande&nbsp;: `python manage.py train_ai_models`
+
+The CTA card stays visible so users can still navigate to `/prediction/new/`
+or `/historique/`.
+
+### 12.3 Dashboard wiring
+
+The dashboard's `Voir la comparaison des modèles` button (Step 9) is now a
+working link to `/modeles/comparaison/` — the previous `disabled` / `Bientôt`
+state is gone. The sidebar's `Comparaison des modèles` link points to the
+same URL and is highlighted as active on the page.
+
+### 12.4 Verifying locally
+
+```bash
+python manage.py check
+python manage.py migrate
+python manage.py train_ai_models           # populates AIModelPerformance
+python manage.py runserver
+# Login as any user, then:
+# /modeles/comparaison/  → table, charts, explainer
+# Dashboard CTA "Voir la comparaison des modèles" → /modeles/comparaison/
+# Anonymous GET /modeles/comparaison/ → 302 to /accounts/login/?next=...
+# To test the empty state:
+#   python manage.py shell -c "from ai_models.models import AIModelPerformance; AIModelPerformance.objects.all().delete()"
+#   then reload /modeles/comparaison/
+```
+
