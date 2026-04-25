@@ -311,6 +311,58 @@ AIModelPerformance.objects.all().delete()
 
 Then reload `/dashboard/` and confirm the placeholders described in §10.1.
 
+## 11. Authentication (Step 10)
+
+The platform uses Django's stock authentication. The `accounts` app exposes:
+
+| URL | View | Purpose |
+| --- | ---- | ------- |
+| `/accounts/register/` | `accounts.views.register` | Sign-up (username, e-mail, password, confirmation). Logs in immediately after success and redirects to `/dashboard/`. |
+| `/accounts/login/`    | `accounts.views.FrenchLoginView` | French login form. Wrong credentials show `Nom d'utilisateur ou mot de passe incorrect.` |
+| `/accounts/logout/`   | `accounts.views.logout_view` (POST) | Logs out and bounces to `/accounts/login/` with a French goodbye message. |
+
+`LOGIN_URL = "accounts:login"`, `LOGIN_REDIRECT_URL = "dashboard:index"`.
+
+### 11.1 Protected pages
+
+The following pages require an authenticated user (`@login_required`).
+Anonymous visitors are redirected to `/accounts/login/?next=...`:
+
+- `/dashboard/`
+- `/prediction/new/`
+- `/prediction/result/<patient_id>/`
+- `/prediction/detail/<result_id>/`
+- `/historique/`
+
+### 11.2 User-owned data
+
+- `PatientData.user` and `PredictionResult.user` are populated automatically on submission (`prediction.views.new_prediction`).
+- `/historique/` only lists the current user's `PredictionResult` rows.
+- `/prediction/detail/<id>/` and `/prediction/result/<id>/` return **404** for non-owners (so we don't leak row existence).
+- The dashboard stat cards (`Prédictions totales`, `Cas à risque élevé`) and the `Prédictions récentes` table are scoped to `request.user`. The model-performance metrics remain global because they describe the trained AI, not user activity.
+- **Admin bypass:** Django staff / superusers see every row, both in Django admin (`/admin/`) and on `/historique/` and the detail/result pages.
+
+### 11.3 Topbar
+
+When authenticated, the topbar shows `Bonjour, <username>` and a `Déconnexion`
+button (CSRF-protected POST form). When anonymous, it shows `Connexion` +
+`Créer un compte` links instead. The sidebar footer also reflects the
+current user's username + role (`Compte clinicien` / `Administrateur`).
+
+### 11.4 Verifying authentication locally
+
+```bash
+python manage.py check
+python manage.py migrate
+python manage.py runserver
+# 1. Open /accounts/register/ and create user A
+# 2. Submit /prediction/new/ as user A → /historique/ shows the row
+# 3. Click "Déconnexion" → redirected to /accounts/login/
+# 4. Register user B, submit a different prediction → /historique/ shows only B's row
+# 5. While logged in as B, visit /prediction/detail/<A's id>/ → 404
+# 6. Try /dashboard/ logged out → redirected to /accounts/login/
+```
+
 ## Next steps
 
 Upcoming steps (tracked separately):

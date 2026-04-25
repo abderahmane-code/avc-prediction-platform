@@ -1,0 +1,55 @@
+{% extends "accounts/_auth_base.html" %}
+
+{% block heading %}Créer un compte{% endblock %}
+{% block subheading %}
+  <p class="auth-card__sub">Ouvrez votre espace clinicien pour enregistrer et suivre vos prédictions.</p>
+{% endblock %}
+
+{% block auth_content %}
+  <form method="post" class="auth-form" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert--error" role="alert">
+        {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <label class="form-field">
+      <span class="form-field__label">{{ form.username.label }}</span>
+      {{ form.username }}
+      {% if form.username.errors %}
+        <span class="form-field__error">{{ form.username.errors|join:" " }}</span>
+      {% endif %}
+    </label>
+
+    <label class="form-field">
+      <span class="form-field__label">{{ form.email.label }}</span>
+      {{ form.email }}
+      {% if form.email.errors %}
+        <span class="form-field__error">{{ form.email.errors|join:" " }}</span>
+      {% endif %}
+    </label>
+
+    <label class="form-field">
+      <span class="form-field__label">{{ form.password1.label }}</span>
+      {{ form.password1 }}
+      {% if form.password1.errors %}
+        <span class="form-field__error">{{ form.password1.errors|join:" " }}</span>
+      {% endif %}
+    </label>
+
+    <label class="form-field">
+      <span class="form-field__label">{{ form.password2.label }}</span>
+      {{ form.password2 }}
+      {% if form.password2.errors %}
+        <span class="form-field__error">{{ form.password2.errors|join:" " }}</span>
+      {% endif %}
+    </label>
+
+    <button type="submit" class="btn btn--primary btn--block">Créer mon compte</button>
+  </form>
+{% endblock %}
+
+{% block footer_link %}
+  <p>Déjà un compte ? <a href="{% url 'accounts:login' %}">Se connecter</a></p>
+{% endblock %}

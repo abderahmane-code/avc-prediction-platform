@@ -4,14 +4,6 @@
 {% block title %}Nouvelle prédiction · AVC Predict{% endblock %}
 
 {% block content %}
-  {% if messages %}
-    <div class="alerts" role="status">
-      {% for message in messages %}
-        <div class="alert alert--{{ message.tags|default:'info' }}">{{ message }}</div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
   <article class="card" aria-labelledby="new-pred-title">
     <header class="card__header">
       <div>

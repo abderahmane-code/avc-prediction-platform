@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import (
@@ -47,6 +49,20 @@ def _run_inference_and_save(patient: PatientData, user):
     )
 
 
+def _can_view(user, owner) -> bool:
+    """Return True if ``user`` may view a record owned by ``owner``.
+
+    Staff/superusers can see everything; otherwise the user must match the
+    owner. ``None`` owner (legacy/anonymous data) is only visible to staff.
+    """
+    if user.is_authenticated and (user.is_staff or user.is_superuser):
+        return True
+    if owner is None:
+        return False
+    return user.is_authenticated and owner.pk == user.pk
+
+
+@login_required
 def new_prediction(request):
     """Render the patient-data form, persist a submission and run a prediction.
 
@@ -86,14 +102,20 @@ def new_prediction(request):
     )
 
 
+@login_required
 def result(request, patient_id: int):
     """Render the live prediction for a given :class:`PatientData`.
 
     Falls back to a French missing-model message when no
     :class:`PredictionResult` is attached to the patient (which only happens
     when the model artifacts are absent at submission time).
+
+    Owner-scoped: only the user who submitted the patient (or staff) can
+    view it. All other users get a 404 to avoid leaking row existence.
     """
     patient = get_object_or_404(PatientData, pk=patient_id)
+    if not _can_view(request.user, patient.user):
+        raise Http404()
     prediction = (
         PredictionResult.objects.filter(patient_data=patient)
         .order_by("-created_at")
@@ -168,25 +190,31 @@ def _row_payload(prediction: PredictionResult) -> dict:
     }
 
 
+@login_required
 def history(request):
-    """Render the global prediction history at ``/historique/``.
+    """Render the prediction history at ``/historique/``.
 
-    Supports a ``?risk=high|low|all`` filter (defaults to ``all``). The page
-    shows a clean French empty state when no :class:`PredictionResult` rows
-    are present (either at all, or for the active filter).
+    Scoped to ``request.user`` so each clinician only sees their own
+    predictions (staff/superusers see every row). Supports a
+    ``?risk=high|low|all`` filter (defaults to ``all``). The page shows a
+    clean French empty state when no :class:`PredictionResult` rows are
+    visible to the user.
     """
     risk_filter = request.GET.get("risk", RISK_FILTER_ALL)
     if risk_filter not in RISK_FILTER_VALUES:
         risk_filter = RISK_FILTER_ALL
 
-    qs = PredictionResult.objects.select_related("patient_data").order_by("-created_at")
+    base_qs = PredictionResult.objects.select_related("patient_data")
+    if not (request.user.is_staff or request.user.is_superuser):
+        base_qs = base_qs.filter(user=request.user)
+    qs = base_qs.order_by("-created_at")
     if risk_filter == RISK_FILTER_HIGH:
         qs = qs.filter(prediction=True)
     elif risk_filter == RISK_FILTER_LOW:
         qs = qs.filter(prediction=False)
 
     rows = [_row_payload(p) for p in qs]
-    total_all = PredictionResult.objects.count()
+    total_all = base_qs.count()
 
     return render(
         request,
@@ -202,12 +230,19 @@ def history(request):
     )
 
 
+@login_required
 def detail(request, result_id: int):
-    """Render a single :class:`PredictionResult` at ``/prediction/detail/<id>/``."""
+    """Render a single :class:`PredictionResult` at ``/prediction/detail/<id>/``.
+
+    Owner-scoped: returns 404 (not 403) for non-owner / non-staff requests
+    so we don't leak the existence of other users' rows.
+    """
     prediction = get_object_or_404(
         PredictionResult.objects.select_related("patient_data"),
         pk=result_id,
     )
+    if not _can_view(request.user, prediction.user):
+        raise Http404()
     patient = prediction.patient_data
 
     fr = {

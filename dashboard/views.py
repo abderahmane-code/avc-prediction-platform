@@ -15,6 +15,7 @@ recent-predictions table shows ``Aucune prédiction enregistrée pour le
 moment.``
 """
 
+from django.contrib.auth.decorators import login_required
 from django.db.models import Avg
 from django.shortcuts import render
 
@@ -55,8 +56,14 @@ def _recent_prediction_payload(prediction: PredictionResult) -> dict:
     }
 
 
+@login_required
 def dashboard(request):
-    """Render the main AVC prediction dashboard, fully backed by PostgreSQL."""
+    """Render the main AVC prediction dashboard, fully backed by PostgreSQL.
+
+    Stat cards / recent predictions are scoped to ``request.user`` so each
+    clinician only sees their own activity. Model performance metrics are
+    global (they reflect the trained AI models, not user data).
+    """
     perfs = list(
         AIModelPerformance.objects.all().order_by(
             "-is_best_model", "-f1_score", "model_name"
@@ -68,8 +75,9 @@ def dashboard(request):
     best_perf = next((p for p in perfs if p.is_best_model), None)
     avg_precision = AIModelPerformance.objects.aggregate(v=Avg("precision"))["v"]
 
-    total_predictions = PredictionResult.objects.count()
-    high_risk_count = PredictionResult.objects.filter(prediction=True).count()
+    user_predictions = PredictionResult.objects.filter(user=request.user)
+    total_predictions = user_predictions.count()
+    high_risk_count = user_predictions.filter(prediction=True).count()
 
     if total_predictions:
         if high_risk_count:
@@ -130,7 +138,7 @@ def dashboard(request):
     ]
 
     recent_qs = (
-        PredictionResult.objects.select_related("patient_data")
+        user_predictions.select_related("patient_data")
         .order_by("-created_at")[:RECENT_PREDICTIONS_LIMIT]
     )
     recent_predictions = [_recent_prediction_payload(p) for p in recent_qs]
