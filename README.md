@@ -224,14 +224,8 @@ No 500 error, no crash — only the prediction half is skipped.
 
 ### 8.2 Dashboard live counts
 
-`/dashboard/` reads real counts from PostgreSQL:
-
-* **Prédictions totales** — number of `PredictionResult` rows (falls back to
-  `PatientData.objects.count()` only when no predictions exist yet).
-* **Cas à risque élevé** — `PredictionResult.objects.filter(prediction=True).count()`
-  with the percentage of total predictions.
-* **Meilleur modèle** / **Précision moyenne** — read from `AIModelPerformance`
-  (Step 6).
+See §10 below — every dashboard card / table / chart is now read from
+PostgreSQL.
 
 ## 9. Prediction history
 
@@ -251,6 +245,71 @@ The detail page reuses the same probability gauge, risk-coloured chip,
 recommendation block, patient recap, and medical disclaimer as the
 post-submission `/prediction/result/<id>/` page — but is anchored on the
 `PredictionResult` id so it stays addressable from the history table.
+
+## 10. Fully dynamic dashboard
+
+`/dashboard/` is entirely driven by PostgreSQL — no hardcoded values.
+
+**Stat cards** (top row):
+
+| Card | Source |
+| ---- | ------ |
+| Prédictions totales | `PredictionResult.objects.count()` |
+| Cas à risque élevé | `PredictionResult.objects.filter(prediction=True).count()` + percentage of total |
+| Meilleur modèle | `AIModelPerformance` row with `is_best_model=True`, with its F1 in the delta line |
+| Précision moyenne | `AIModelPerformance.objects.aggregate(Avg("precision"))` over all rows |
+
+**Actions rapides** card: three CTAs:
+
+* `Nouvelle prédiction` → `/prediction/new/`
+* `Voir l'historique` → `/historique/`
+* `Comparaison des modèles` — disabled placeholder with a `Bientôt` chip
+  until that page lands as its own step.
+
+**Prédictions récentes** card: the 5 most recent `PredictionResult` rows
+(joined to `PatientData` via `select_related`) with Date / Âge / Modèle /
+Résultat (red `Risque élevé` / teal `Risque faible` badge) / Probabilité /
+`Détails` link to `/prediction/detail/<id>/`. A `Voir tout` chip in the
+header links to `/historique/`.
+
+**Comparaison des modèles d'IA** table: every `AIModelPerformance` row,
+sorted with the best-by-F1 first (highlighted via `models-table__row--best`
++ a `Meilleur` badge).
+
+**Comparaison des performances** chart: Chart.js bar chart fed by
+`json_script` with the same `AIModelPerformance` rows — Accuracy /
+Precision / Recall / F1 / ROC-AUC per model. ROC-AUC nulls render as 0.
+
+### 10.1 Empty states
+
+| Table empty | Behaviour |
+| ----------- | --------- |
+| No `PredictionResult` | `Prédictions totales = 0`, `Cas à risque élevé = 0`, recent-predictions card shows `Aucune prédiction enregistrée pour le moment.` |
+| No `AIModelPerformance` | `Meilleur modèle = —`, `Précision moyenne = —` (`Lancer 'python manage.py train_ai_models'` hint), comparison table shows the same hint, chart card shows an empty-state |
+| Both empty | All four cards + both tables + chart show the placeholders above; no crash |
+
+### 10.2 Verifying the dashboard locally
+
+```bash
+python manage.py check
+python manage.py migrate
+python manage.py train_ai_models   # populates AIModelPerformance + the 3 .pkl/.json artifacts
+python manage.py runserver
+# Submit at least 2 predictions via /prediction/new/, then open /dashboard/.
+# Stat cards / recent-predictions / comparison table / chart should all
+# reflect live PostgreSQL state.
+```
+
+To exercise the empty path:
+
+```python
+from prediction.models import PredictionResult
+from ai_models.models import AIModelPerformance
+PredictionResult.objects.all().delete()
+AIModelPerformance.objects.all().delete()
+```
+
+Then reload `/dashboard/` and confirm the placeholders described in §10.1.
 
 ## Next steps
 

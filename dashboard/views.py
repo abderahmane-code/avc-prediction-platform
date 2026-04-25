@@ -1,15 +1,29 @@
+"""Dashboard view for the AVC prediction platform.
+
+Every metric on the dashboard is read from PostgreSQL:
+
+* :class:`PredictionResult` powers the ``Prédictions totales`` /
+  ``Cas à risque élevé`` stat cards and the ``Prédictions récentes`` table.
+* :class:`AIModelPerformance` powers the ``Meilleur modèle`` /
+  ``Précision moyenne`` stat cards, the comparison table, and the
+  Chart.js dataset.
+
+The page deliberately renders cleanly when either table is empty: stat
+cards fall back to ``—`` placeholders, the comparison table shows a
+``train_ai_models`` hint, the chart card swaps in an empty-state, and the
+recent-predictions table shows ``Aucune prédiction enregistrée pour le
+moment.``
+"""
+
 from django.db.models import Avg
 from django.shortcuts import render
 
 from ai_models.models import AIModelPerformance
-from prediction.models import PatientData, PredictionResult
+from prediction.models import PredictionResult
 
 
-PLACEHOLDER_RECOMMENDATION = (
-    "Le modèle d'IA sera connecté au formulaire dans une prochaine étape : "
-    "les recommandations cliniques afficheront alors la sortie réelle du "
-    "modèle pour chaque patient."
-)
+# Number of rows shown in the "Prédictions récentes" card.
+RECENT_PREDICTIONS_LIMIT = 5
 
 
 def _model_perf_payload(perf: AIModelPerformance) -> dict:
@@ -25,15 +39,24 @@ def _model_perf_payload(perf: AIModelPerformance) -> dict:
     }
 
 
-def dashboard(request):
-    """Render the main AVC prediction dashboard.
+def _recent_prediction_payload(prediction: PredictionResult) -> dict:
+    """Build the per-row dict used by the ``Prédictions récentes`` card."""
+    patient = prediction.patient_data
+    proba_pct = max(0.0, min(1.0, prediction.risk_probability)) * 100
+    return {
+        "id": prediction.pk,
+        "created_at": prediction.created_at,
+        "age": patient.age,
+        "is_high": bool(prediction.prediction),
+        "risk_label": prediction.risk_label,
+        "probability": prediction.risk_probability,
+        "probability_pct": proba_pct,
+        "model_name": prediction.model_name,
+    }
 
-    The model-comparison table, the "Meilleur modèle" / "Précision moyenne"
-    stat cards and the Chart.js dataset are all backed by the
-    :class:`AIModelPerformance` rows in PostgreSQL. When that table is empty
-    (e.g. before the very first ``manage.py train_ai_models`` run) every
-    metric falls back to a ``—`` placeholder and the page still renders.
-    """
+
+def dashboard(request):
+    """Render the main AVC prediction dashboard, fully backed by PostgreSQL."""
     perfs = list(
         AIModelPerformance.objects.all().order_by(
             "-is_best_model", "-f1_score", "model_name"
@@ -45,7 +68,7 @@ def dashboard(request):
     best_perf = next((p for p in perfs if p.is_best_model), None)
     avg_precision = AIModelPerformance.objects.aggregate(v=Avg("precision"))["v"]
 
-    total_predictions = PredictionResult.objects.count() or PatientData.objects.count()
+    total_predictions = PredictionResult.objects.count()
     high_risk_count = PredictionResult.objects.filter(prediction=True).count()
 
     if total_predictions:
@@ -75,7 +98,11 @@ def dashboard(request):
         {
             "label": "Prédictions totales",
             "value": f"{total_predictions:,}".replace(",", " "),
-            "delta": "Patients enregistrés" if total_predictions else "Aucune donnée pour le moment",
+            "delta": (
+                "Toutes prédictions confondues"
+                if total_predictions
+                else "Aucune donnée pour le moment"
+            ),
             "icon": "activity",
             "accent": "blue",
         },
@@ -102,26 +129,20 @@ def dashboard(request):
         },
     ]
 
-    sample_result = {
-        "risk_label": "À venir",
-        "risk_level": "low",
-        "probability": 0.0,
-        "model": best_label if has_models else "—",
-        "recommendation": PLACEHOLDER_RECOMMENDATION,
-        "contributors": [
-            ("Hypertension", "—"),
-            ("Glycémie moyenne", "—"),
-            ("IMC", "—"),
-            ("Âge", "—"),
-        ],
-    }
+    recent_qs = (
+        PredictionResult.objects.select_related("patient_data")
+        .order_by("-created_at")[:RECENT_PREDICTIONS_LIMIT]
+    )
+    recent_predictions = [_recent_prediction_payload(p) for p in recent_qs]
 
     context = {
         "page_title": "Tableau de bord",
         "active_nav": "dashboard",
         "stats": stats,
-        "sample_result": sample_result,
         "models_comparison": models_comparison,
         "has_models": has_models,
+        "recent_predictions": recent_predictions,
+        "has_recent_predictions": bool(recent_predictions),
+        "total_predictions": total_predictions,
     }
     return render(request, "dashboard/dashboard.html", context)

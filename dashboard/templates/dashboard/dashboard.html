@@ -27,164 +27,87 @@
     {% endfor %}
   </section>
 
-  <section class="two-col">
-    <article class="card" aria-labelledby="patient-form-title">
-      <header class="card__header">
-        <div>
-          <h2 id="patient-form-title" class="card__title">Données du patient</h2>
-          <p class="card__subtitle">Renseignez les caractéristiques cliniques pour lancer une prédiction.</p>
-        </div>
-        <span class="chip chip--teal">Formulaire</span>
-      </header>
-
-      <form class="patient-form" onsubmit="event.preventDefault();" autocomplete="off">
-        <div class="form-row">
-          <label class="field">
-            <span>Genre</span>
-            <select name="gender">
-              <option>Femme</option>
-              <option>Homme</option>
-              <option>Autre</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>Âge</span>
-            <input type="number" name="age" min="0" max="120" step="1" placeholder="ex. 54" />
-          </label>
-          <label class="field">
-            <span>IMC</span>
-            <input type="number" name="bmi" min="0" step="0.1" placeholder="ex. 27.4" />
-          </label>
-        </div>
-
-        <div class="form-row">
-          <label class="field">
-            <span>Hypertension</span>
-            <select name="hypertension">
-              <option value="0">Non</option>
-              <option value="1">Oui</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>Maladie cardiaque</span>
-            <select name="heart_disease">
-              <option value="0">Non</option>
-              <option value="1">Oui</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>Déjà marié(e)</span>
-            <select name="ever_married">
-              <option value="1">Oui</option>
-              <option value="0">Non</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="form-row">
-          <label class="field">
-            <span>Type d'emploi</span>
-            <select name="work_type">
-              <option>Privé</option>
-              <option>Indépendant</option>
-              <option>Fonction publique</option>
-              <option>Enfant</option>
-              <option>Jamais travaillé</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>Zone de résidence</span>
-            <select name="residence_type">
-              <option>Urbaine</option>
-              <option>Rurale</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>Statut tabagique</span>
-            <select name="smoking_status">
-              <option>Jamais fumé</option>
-              <option>Ancien fumeur</option>
-              <option>Fumeur</option>
-              <option>Inconnu</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="form-row">
-          <label class="field field--wide">
-            <span>Glycémie moyenne (mg/dL)</span>
-            <input type="number" name="avg_glucose_level" min="0" step="0.1" placeholder="ex. 110.5" />
-          </label>
-          <label class="field">
-            <span>Modèle à utiliser</span>
-            <select name="model">
-              <option>Random Forest</option>
-              <option>Gradient Boosting</option>
-              <option>Logistic Regression</option>
-              <option>SVM</option>
-              <option>KNN</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="form-actions">
-          <button type="reset" class="btn btn--ghost">Réinitialiser</button>
-          <a href="{% url 'prediction:new' %}" class="btn btn--primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
-            Ouvrir le formulaire complet
-          </a>
-        </div>
-      </form>
-    </article>
-
-    <article class="card card--risk card--risk-{{ sample_result.risk_level }}" aria-labelledby="result-title">
-      <header class="card__header">
-        <div>
-          <h2 id="result-title" class="card__title">Résultat de la prédiction</h2>
-          <p class="card__subtitle">Exemple — les résultats réels seront calculés par le modèle IA.</p>
-        </div>
-        <span class="chip chip--{{ sample_result.risk_level }}">Risque {{ sample_result.risk_label|lower }}</span>
-      </header>
-
-      <div class="risk-result">
-        <div class="risk-gauge" role="img" aria-label="Probabilité de risque d'AVC">
-          <svg viewBox="0 0 120 120" class="risk-gauge__svg">
-            <circle cx="60" cy="60" r="52" class="risk-gauge__track" />
-            <circle cx="60" cy="60" r="52" class="risk-gauge__value"
-                    style="stroke-dasharray: {{ sample_result.probability|floatformat:2|slice:'2:' }} 1000;"
-                    pathLength="100" />
-          </svg>
-          <div class="risk-gauge__text">
-            <div class="risk-gauge__percent">{{ sample_result.probability|floatformat:2 }}</div>
-            <div class="risk-gauge__label">Probabilité</div>
-          </div>
-        </div>
-
-        <div class="risk-summary">
-          <div class="risk-summary__line">
-            <span class="risk-summary__label">Modèle</span>
-            <span class="risk-summary__value">{{ sample_result.model }}</span>
-          </div>
-          <div class="risk-summary__line">
-            <span class="risk-summary__label">Niveau de risque</span>
-            <span class="risk-summary__value risk-summary__value--{{ sample_result.risk_level }}">{{ sample_result.risk_label }}</span>
-          </div>
-          <div class="risk-summary__contrib">
-            <div class="risk-summary__contrib-title">Facteurs principaux</div>
-            <ul class="risk-summary__contrib-list">
-              {% for name, value in sample_result.contributors %}
-                <li><span>{{ name }}</span><strong>{{ value }}</strong></li>
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
+  <section class="card cta-card" aria-labelledby="cta-title">
+    <header class="card__header">
+      <div>
+        <h2 id="cta-title" class="card__title">Actions rapides</h2>
+        <p class="card__subtitle">Lancez une nouvelle prédiction ou explorez les résultats déjà enregistrés.</p>
       </div>
+      <span class="chip chip--blue">Raccourcis</span>
+    </header>
+    <div class="cta-row">
+      <a href="{% url 'prediction:new' %}" class="btn btn--primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        Nouvelle prédiction
+      </a>
+      <a href="{% url 'history' %}" class="btn btn--secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+        Voir l'historique
+      </a>
+      <button type="button" class="btn btn--ghost" disabled aria-disabled="true" title="Bientôt disponible">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+        Comparaison des modèles
+        <span class="chip chip--muted chip--inline">Bientôt</span>
+      </button>
+    </div>
+  </section>
 
-      <div class="recommendation">
-        <div class="recommendation__title">Recommandation clinique</div>
-        <p class="recommendation__text">{{ sample_result.recommendation }}</p>
+  <section class="card" aria-labelledby="recent-title">
+    <header class="card__header">
+      <div>
+        <h2 id="recent-title" class="card__title">Prédictions récentes</h2>
+        {% if has_recent_predictions %}
+          <p class="card__subtitle">Les {{ recent_predictions|length }} dernière{{ recent_predictions|length|pluralize:"s,s" }} prédiction{{ recent_predictions|length|pluralize:",s" }} enregistrée{{ recent_predictions|length|pluralize:",s" }} — sur {{ total_predictions }} au total.</p>
+        {% else %}
+          <p class="card__subtitle">Aucune prédiction enregistrée pour le moment.</p>
+        {% endif %}
       </div>
-    </article>
+      {% if has_recent_predictions %}
+        <a href="{% url 'history' %}" class="chip chip--blue chip--link">Voir tout</a>
+      {% else %}
+        <span class="chip chip--muted">Vide</span>
+      {% endif %}
+    </header>
+    <div class="table-wrap">
+      <table class="models-table" aria-label="Prédictions récentes">
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Âge</th>
+            <th scope="col">Modèle</th>
+            <th scope="col">Résultat</th>
+            <th scope="col">Probabilité</th>
+            <th scope="col" class="models-table__action">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recent_predictions %}
+            <tr>
+              <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ r.age|floatformat:"0" }} ans</td>
+              <td>{{ r.model_name }}</td>
+              <td>
+                {% if r.is_high %}
+                  <span class="badge badge--high">{{ r.risk_label }}</span>
+                {% else %}
+                  <span class="badge badge--low">{{ r.risk_label }}</span>
+                {% endif %}
+              </td>
+              <td>{{ r.probability_pct|floatformat:1 }} %</td>
+              <td class="models-table__action">
+                <a href="{% url 'prediction:detail' r.id %}" class="btn btn--ghost btn--sm">Détails</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="models-table__empty">
+                Aucune prédiction enregistrée pour le moment.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </section>
 
   <section class="card" aria-labelledby="models-table-title">
