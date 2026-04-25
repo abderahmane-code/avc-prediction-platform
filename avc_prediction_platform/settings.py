@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "dashboard",
     "prediction",
     "ai_models",
+    "management",
 ]
 
 MIDDLEWARE = [
