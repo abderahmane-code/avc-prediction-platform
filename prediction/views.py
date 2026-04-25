@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import (
@@ -276,3 +276,45 @@ def detail(request, result_id: int):
             "active_nav": "history",
         },
     )
+
+
+# --------------------------------------------------------------------------- #
+# Step 14: PDF export
+# --------------------------------------------------------------------------- #
+
+
+@login_required
+def detail_pdf(request, result_id: int):
+    """Stream a PDF report for a single :class:`PredictionResult`.
+
+    Same access rules as :func:`detail`: the prediction's owner may export
+    their own report, staff/superusers may export any report, everyone else
+    gets a 404 (so the route does not leak the existence of other users'
+    rows). Uses ReportLab — pure-Python, no system dependencies.
+    """
+    from .pdf_report import render_prediction_report
+
+    prediction = get_object_or_404(
+        PredictionResult.objects.select_related("patient_data"),
+        pk=result_id,
+    )
+    if not _can_view(request.user, prediction.user):
+        raise Http404()
+
+    patient = prediction.patient_data
+    fr_labels = {
+        "gender": _fr_label(GENDER_CHOICES_FR, patient.gender),
+        "work_type": _fr_label(WORK_TYPE_CHOICES_FR, patient.work_type),
+        "residence_type": _fr_label(RESIDENCE_TYPE_CHOICES_FR, patient.residence_type),
+        "smoking_status": _fr_label(SMOKING_STATUS_CHOICES_FR, patient.smoking_status),
+    }
+
+    pdf_bytes = render_prediction_report(
+        prediction=prediction,
+        patient=patient,
+        fr_labels=fr_labels,
+    )
+    filename = f"rapport-prediction-{prediction.pk}.pdf"
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
