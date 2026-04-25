@@ -463,7 +463,7 @@ mobile behaviour.
 
 No template, view, model, URL, training, or inference code was modified.
 
-### 13.3 Verifying locally
+### 13.3 Verifying locally (Step 12)
 
 ```bash
 python manage.py check
@@ -483,3 +483,77 @@ python manage.py runserver
 ```
 
 
+
+## 14. Public landing page (Step 13)
+
+`/` is now a **public landing page** rendered by `dashboard.views.home` and the
+`templates/landing.html` template. It is the first thing both anonymous and
+authenticated visitors see — `/dashboard/` continues to require a login.
+
+### 14.1 Layout
+
+The landing page has its own thin chrome (no sidebar / topbar) and these
+sections, in order:
+
+1. **Sticky top nav** — brand, in-page anchors (Présentation / Objectifs /
+   Technologies / Modèles), and auth actions on the right.
+2. **Hero** — `Plateforme intelligente de prédiction du risque d'AVC` +
+   subtitle + adaptive CTA buttons + a small visual card showing the six
+   model names and a synthetic bar chart.
+3. **§01 Présentation du projet**
+4. **§02 Objectifs** — 4-card grid (Évaluer plusieurs modèles d'IA / Stocker
+   chaque prédiction / Donner un retour clinique / Visualiser les
+   performances).
+5. **§03 Technologies utilisées** — pill badges: Django, PostgreSQL, Python,
+   Scikit-learn, Machine Learning, Chart.js.
+6. **§04 Modèles d'IA comparés** — 6-card grid (Logistic Regression, Random
+   Forest, SVM, KNN, Decision Tree, Naive Bayes — last one styled as the
+   "souvent retenu" model).
+7. **CTA banner** — gradient blue→teal with role-aware buttons.
+8. **§05 Avertissement médical** —
+   `Cette application est un projet académique et ne remplace pas un
+   diagnostic médical.`
+9. **Footer** — brand mark + the same disclaimer text.
+
+### 14.2 CTAs by auth state
+
+- **Anonymous** — header shows `Se connecter` and `Créer un compte`. Hero
+  shows all four buttons; the two "secured" CTAs route through
+  `/accounts/login/?next=…` so they bounce through login on the way to
+  `/prediction/new/` or `/modeles/comparaison/`. Bottom CTA banner shows
+  `Créer un compte` + `Se connecter`.
+- **Authenticated** — header shows `Tableau de bord` + `Déconnexion` (real
+  CSRF-protected POST form). Hero shows `Tableau de bord` +
+  `+ Commencer une prédiction` + `Voir la comparaison des modèles`. Bottom
+  CTA banner shows `+ Commencer une prédiction` +
+  `Comparaison des modèles`.
+
+### 14.3 Files touched
+
+- `avc_prediction_platform/urls.py` — replaced the `/` → `/dashboard/`
+  redirect with `path("", dashboard_views.home, name="home")`.
+- `dashboard/views.py` — added a thin public `home` view (renders the
+  template — no login required, no DB hit).
+- `templates/landing.html` — new template (standalone HTML — no
+  `extends "base.html"`).
+- `static/css/style.css` — appended a `Step 13: public landing page` block
+  (~280 lines). No existing rule was deleted.
+- `README.md` — this section.
+
+No backend logic, model code, training command, or auth view was touched.
+
+### 14.4 Verifying locally
+
+```bash
+python manage.py check
+python manage.py migrate
+python manage.py runserver
+# Anonymous:
+#   GET /                          → 200, landing page with login/register CTAs
+#   /accounts/login/?next=/prediction/new/   → reachable from the secured CTA
+#   GET /dashboard/                → 302 → /accounts/login/?next=/dashboard/
+# Authenticated:
+#   GET /                          → landing page with dashboard CTAs
+#   GET /dashboard/                → still works
+#   /prediction/new/, /historique/, /modeles/comparaison/ → still work
+```

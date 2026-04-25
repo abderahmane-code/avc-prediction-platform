@@ -2,13 +2,14 @@
 
 from django.contrib import admin
 from django.urls import include, path
-from django.views.generic import RedirectView
 
+from dashboard import views as dashboard_views
 from prediction import views as prediction_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", RedirectView.as_view(pattern_name="dashboard:index", permanent=False)),
+    # Public landing page — no auth required (Step 13).
+    path("", dashboard_views.home, name="home"),
     path("accounts/", include("accounts.urls", namespace="accounts")),
     path("dashboard/", include("dashboard.urls", namespace="dashboard")),
     path("prediction/", include("prediction.urls", namespace="prediction")),

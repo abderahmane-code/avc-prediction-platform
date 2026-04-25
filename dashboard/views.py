@@ -27,6 +27,19 @@ from prediction.models import PredictionResult
 RECENT_PREDICTIONS_LIMIT = 5
 
 
+def home(request):
+    """Public landing page rendered at ``/``.
+
+    Available to everyone — does not require authentication. CTAs adapt to
+    the current auth state: anonymous users see ``Se connecter`` / ``Créer un
+    compte`` and the "secured" CTAs (``Commencer une prédiction``, ``Voir la
+    comparaison des modèles``) bounce through the login flow via
+    ``?next=…``. Authenticated users see ``Tableau de bord`` /
+    ``Commencer une prédiction`` / ``Voir la comparaison des modèles``.
+    """
+    return render(request, "landing.html")
+
+
 def _model_perf_payload(perf: AIModelPerformance) -> dict:
     """Map an :class:`AIModelPerformance` row to the dict the template expects."""
     return {
