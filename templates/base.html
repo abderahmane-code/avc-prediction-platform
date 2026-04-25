@@ -52,11 +52,21 @@
       </nav>
 
       <div class="sidebar__footer">
-        <div class="sidebar__footer-avatar">DR</div>
-        <div class="sidebar__footer-meta">
-          <div class="sidebar__footer-name">Dr. Démo</div>
-          <div class="sidebar__footer-role">Compte clinicien</div>
-        </div>
+        {% if user.is_authenticated %}
+          <div class="sidebar__footer-avatar">{{ user.username|slice:":2"|upper }}</div>
+          <div class="sidebar__footer-meta">
+            <div class="sidebar__footer-name">{{ user.username }}</div>
+            <div class="sidebar__footer-role">
+              {% if user.is_staff %}Administrateur{% else %}Compte clinicien{% endif %}
+            </div>
+          </div>
+        {% else %}
+          <div class="sidebar__footer-avatar">?</div>
+          <div class="sidebar__footer-meta">
+            <div class="sidebar__footer-name">Invité</div>
+            <div class="sidebar__footer-role">Non connecté</div>
+          </div>
+        {% endif %}
       </div>
     </aside>
 
@@ -78,8 +88,33 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
             <span class="icon-button__dot" aria-hidden="true"></span>
           </button>
+          {% if user.is_authenticated %}
+            <div class="topbar__user">
+              <span class="topbar__user-greeting">Bonjour, <strong>{{ user.username }}</strong></span>
+              <form method="post" action="{% url 'accounts:logout' %}" class="topbar__user-form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--ghost btn--sm">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+                  Déconnexion
+                </button>
+              </form>
+            </div>
+          {% else %}
+            <div class="topbar__user">
+              <a href="{% url 'accounts:login' %}" class="btn btn--ghost btn--sm">Connexion</a>
+              <a href="{% url 'accounts:register' %}" class="btn btn--primary btn--sm">Créer un compte</a>
+            </div>
+          {% endif %}
         </div>
       </header>
+
+      {% if messages %}
+        <div class="content-messages" role="status">
+          {% for message in messages %}
+            <div class="alert alert--{{ message.tags|default:'info' }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
 
       <main class="content">
         {% block content %}{% endblock %}

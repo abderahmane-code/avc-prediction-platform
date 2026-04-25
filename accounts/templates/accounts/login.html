@@ -1,0 +1,41 @@
+{% extends "accounts/_auth_base.html" %}
+
+{% block heading %}Connexion{% endblock %}
+{% block subheading %}
+  <p class="auth-card__sub">Accédez à votre tableau de bord et à votre historique de prédictions.</p>
+{% endblock %}
+
+{% block auth_content %}
+  <form method="post" class="auth-form" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert--error" role="alert">
+        {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <label class="form-field">
+      <span class="form-field__label">{{ form.username.label }}</span>
+      {{ form.username }}
+      {% if form.username.errors %}
+        <span class="form-field__error">{{ form.username.errors|join:" " }}</span>
+      {% endif %}
+    </label>
+
+    <label class="form-field">
+      <span class="form-field__label">{{ form.password.label }}</span>
+      {{ form.password }}
+      {% if form.password.errors %}
+        <span class="form-field__error">{{ form.password.errors|join:" " }}</span>
+      {% endif %}
+    </label>
+
+    {% if next %}<input type="hidden" name="next" value="{{ next }}" />{% endif %}
+
+    <button type="submit" class="btn btn--primary btn--block">Se connecter</button>
+  </form>
+{% endblock %}
+
+{% block footer_link %}
+  <p>Pas encore de compte ? <a href="{% url 'accounts:register' %}">Créer un compte</a></p>
+{% endblock %}

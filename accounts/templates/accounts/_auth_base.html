@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}{{ page_title }} · AVC Predict{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+    <aside class="auth-hero" aria-hidden="true">
+      <div class="auth-hero__brand">
+        <span class="auth-hero__mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.5 2 6 4 7.5V22h8v-4.5c2-1.5 4-4 4-7.5a8 8 0 0 0-8-8Z"/><path d="M9 22h6"/></svg>
+        </span>
+        <div>
+          <div class="auth-hero__title">AVC Predict</div>
+          <div class="auth-hero__sub">Plateforme clinique IA</div>
+        </div>
+      </div>
+      <h2 class="auth-hero__heading">Prédiction du risque d'AVC, assistée par IA.</h2>
+      <p class="auth-hero__lead">Connectez-vous pour soumettre des données patient, suivre vos prédictions et comparer les modèles entraînés.</p>
+      <ul class="auth-hero__points">
+        <li>6 modèles comparés (Logistic Regression, Random Forest, SVM…)</li>
+        <li>Historique privé sécurisé par utilisateur</li>
+        <li>Recommandations cliniques en français</li>
+      </ul>
+      <p class="auth-hero__disclaimer">Cette application ne remplace pas un diagnostic médical.</p>
+    </aside>
+
+    <section class="auth-card-wrap">
+      <article class="card auth-card" role="region" aria-labelledby="auth-title">
+        <header class="auth-card__header">
+          <h1 id="auth-title" class="auth-card__title">{% block heading %}{{ page_title }}{% endblock %}</h1>
+          {% block subheading %}{% endblock %}
+        </header>
+
+        {% if messages %}
+          <div class="auth-messages" role="status">
+            {% for message in messages %}
+              <div class="alert alert--{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% block auth_content %}{% endblock %}
+
+        <footer class="auth-card__footer">
+          {% block footer_link %}{% endblock %}
+        </footer>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
