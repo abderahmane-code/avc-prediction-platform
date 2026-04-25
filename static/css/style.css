@@ -1137,3 +1137,188 @@ svg { width: 1em; height: 1em; }
 @media (max-width: 720px) {
   .best-model-card { grid-template-columns: 1fr; text-align: left; }
 }
+
+/* ---------- Step 12: visual polish ---------- */
+
+/* Soft top-of-page wash for a bit more depth than a flat background */
+body {
+  background:
+    radial-gradient(900px 440px at 8% -120px, rgba(37, 99, 235, 0.08), transparent 70%),
+    radial-gradient(700px 380px at 100% -160px, rgba(13, 148, 136, 0.07), transparent 75%),
+    var(--color-bg);
+  background-attachment: fixed;
+}
+
+/* Stronger active state on sidebar — left accent bar + bolder weight */
+.nav-item {
+  position: relative;
+  padding-left: 14px;
+}
+.nav-item--active {
+  font-weight: 600;
+}
+.nav-item--active::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 8px; bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-teal));
+}
+.nav-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+/* Sidebar brand polish */
+.sidebar__brand-mark {
+  background: linear-gradient(135deg, #2563eb 0%, #0d9488 100%);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25), inset 0 -1px 0 rgba(255,255,255,0.18);
+}
+.sidebar__brand-mark svg { width: 22px; height: 22px; stroke-width: 2.2; }
+
+/* Topbar: subtle drop shadow when scrolled, tighter user area */
+.topbar { box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04); }
+.topbar__user { gap: 8px; }
+.topbar__user-greeting {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 6px 12px;
+  font-size: 12.5px;
+}
+
+/* Stat cards — hover lift + softer icon tile */
+.stat-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-strong);
+}
+.stat-card__icon {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+.stat-card--blue .stat-card__icon  { background: linear-gradient(135deg, #dbeafe, #c7d2fe); }
+.stat-card--teal .stat-card__icon  { background: linear-gradient(135deg, #ccfbf1, #a7f3d0); }
+.stat-card--red  .stat-card__icon  { background: linear-gradient(135deg, #fee2e2, #fecaca); }
+
+/* Cards — slightly stronger lift, refined corner */
+.card {
+  box-shadow: var(--shadow-sm), 0 1px 0 rgba(255,255,255,0.6) inset;
+}
+
+/* Primary button — subtle gradient + soft shadow for the "premium" feel */
+.btn--primary {
+  background: linear-gradient(180deg, #2f70f0 0%, #2563eb 100%);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25), 0 4px 12px -4px rgba(37, 99, 235, 0.45);
+}
+.btn--primary:hover {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.35), 0 6px 16px -4px rgba(37, 99, 235, 0.55);
+}
+.btn--secondary { box-shadow: 0 1px 2px rgba(13, 148, 136, 0.15); }
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+}
+
+/* Tables — alternating row tint + sticky header inside scroll wrap */
+.models-table tbody tr:nth-child(even) {
+  background: rgba(241, 245, 249, 0.45);
+}
+.models-table tbody tr:nth-child(even):hover { background: var(--color-surface-muted); }
+.models-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Filter chips — soft shadow on active, tighter type */
+.filter-chip {
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.filter-chip--active { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06); }
+
+/* Risk gauge — soft halo */
+.risk-gauge {
+  filter: drop-shadow(0 4px 14px rgba(15, 23, 42, 0.08));
+}
+.card--risk-high .risk-gauge__value  { stroke: var(--color-red); }
+.card--risk-low  .risk-gauge__value  { stroke: var(--color-teal); }
+
+/* Recommendation block — bigger title weight */
+.recommendation__title { font-size: 11.5px; }
+.recommendation__text { line-height: 1.55; }
+
+/* Disclaimer footer — tighter, centered amber dot */
+.disclaimer { padding: 16px 36px 22px; }
+
+/* Filter-chip layout container if not already wrapped */
+.filters .filter-chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+/* Icon-button polish */
+.icon-button { box-shadow: var(--shadow-sm); }
+.icon-button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18); }
+
+/* Topbar search a touch wider on large screens */
+@media (min-width: 1280px) {
+  .topbar__search input { min-width: 320px; }
+}
+
+/* Mobile sidebar backdrop */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 25;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.sidebar-backdrop.is-active {
+  display: block;
+  opacity: 1;
+}
+
+/* Auth hero polish — subtle medical pattern */
+.auth-hero {
+  background:
+    radial-gradient(600px 280px at 110% -10%, rgba(255,255,255,0.18), transparent 65%),
+    radial-gradient(500px 240px at -10% 110%, rgba(13, 148, 136, 0.35), transparent 70%),
+    linear-gradient(150deg, #1f3b6f 0%, #1d6f8f 100%);
+  position: relative;
+  overflow: hidden;
+}
+.auth-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(255,255,255,0.12) 1.2px, transparent 1.4px);
+  background-size: 22px 22px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+.auth-hero > * { position: relative; z-index: 1; }
+
+/* Best-model card — subtle halo */
+.best-model-card {
+  box-shadow: 0 6px 22px -16px rgba(13, 148, 136, 0.55), var(--shadow-sm);
+}
+
+/* Smaller screens: stack the topbar cleanly */
+@media (max-width: 1100px) {
+  .topbar__user-greeting { display: none; }
+}
+@media (max-width: 900px) {
+  .content-messages { padding: 0 20px; }
+}
+@media (max-width: 640px) {
+  .topbar { gap: 12px; }
+  .topbar__actions { gap: 6px; }
+}
