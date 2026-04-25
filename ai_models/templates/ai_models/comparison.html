@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Comparaison des modèles · AVC Predict{% endblock %}
+
+{% block content %}
+  <section class="card cta-card" aria-labelledby="models-cta-title">
+    <header class="card__header">
+      <div>
+        <h2 id="models-cta-title" class="card__title">Comparaison des modèles d'IA</h2>
+        <p class="card__subtitle">
+          Performances mesurées sur le jeu de test. Toutes les métriques
+          proviennent de la table <code>AIModelPerformance</code>.
+        </p>
+      </div>
+      {% if has_models %}
+        <span class="chip chip--blue">{{ model_count }} modèle{{ model_count|pluralize:",s" }}</span>
+      {% else %}
+        <span class="chip chip--muted">Aucun modèle</span>
+      {% endif %}
+    </header>
+    <div class="cta-row">
+      <a href="{% url 'prediction:new' %}" class="btn btn--primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        Nouvelle prédiction
+      </a>
+      <a href="{% url 'history' %}" class="btn btn--secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+        Voir l'historique
+      </a>
+    </div>
+  </section>
+
+  {% if not has_models %}
+    <section class="card" aria-labelledby="models-empty-title">
+      <header class="card__header">
+        <div>
+          <h2 id="models-empty-title" class="card__title">Aucun modèle disponible</h2>
+        </div>
+      </header>
+      <p class="empty-state">
+        Aucun modèle IA entraîné pour le moment. Exécutez la commande&nbsp;:
+        <code>python manage.py train_ai_models</code>
+      </p>
+    </section>
+  {% else %}
+    {% if best %}
+      <section class="card best-model-card" aria-labelledby="best-model-title">
+        <div class="best-model-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 4h3v3a3 3 0 0 1-3 3"/><path d="M7 4H4v3a3 3 0 0 0 3 3"/></svg>
+        </div>
+        <div class="best-model-card__body">
+          <p class="best-model-card__eyebrow">Meilleur modèle sélectionné</p>
+          <h2 id="best-model-title" class="best-model-card__title">{{ best.name }}</h2>
+          <p class="best-model-card__sub">
+            Sélectionné automatiquement par <strong>F1-score</strong>
+            ({{ best.f1|floatformat:3 }}). Accuracy {{ best.accuracy|floatformat:3 }} ·
+            Précision {{ best.precision|floatformat:3 }} ·
+            Rappel {{ best.recall|floatformat:3 }}{% if best.roc_auc is not None %} ·
+            ROC-AUC {{ best.roc_auc|floatformat:3 }}{% endif %}.
+          </p>
+        </div>
+        <span class="badge badge--teal">Meilleur modèle</span>
+      </section>
+    {% endif %}
+
+    <section class="card" aria-labelledby="models-comparison-title">
+      <header class="card__header">
+        <div>
+          <h2 id="models-comparison-title" class="card__title">Tableau comparatif</h2>
+          <p class="card__subtitle">
+            Tous les modèles entraînés, triés par F1-score décroissant.
+            La ligne en surbrillance correspond au modèle retenu pour
+            l'inférence en production.
+          </p>
+        </div>
+        <span class="chip chip--blue">{{ model_count }} modèle{{ model_count|pluralize:",s" }}</span>
+      </header>
+      <div class="table-wrap">
+        <table class="models-table" aria-label="Comparaison détaillée des modèles">
+          <thead>
+            <tr>
+              <th scope="col">Modèle</th>
+              <th scope="col">Accuracy</th>
+              <th scope="col">Précision</th>
+              <th scope="col">Rappel</th>
+              <th scope="col">F1-score</th>
+              <th scope="col">ROC-AUC</th>
+              <th scope="col">Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in rows %}
+              <tr {% if m.is_best %}class="models-table__row--best"{% endif %}>
+                <th scope="row">
+                  {% if m.is_best %}
+                    <span class="trophy" aria-hidden="true" title="Meilleur modèle">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 4h3v3a3 3 0 0 1-3 3"/><path d="M7 4H4v3a3 3 0 0 0 3 3"/></svg>
+                    </span>
+                  {% endif %}
+                  {{ m.name }}
+                </th>
+                <td>{{ m.accuracy|floatformat:3 }}</td>
+                <td>{{ m.precision|floatformat:3 }}</td>
+                <td>{{ m.recall|floatformat:3 }}</td>
+                <td>{{ m.f1|floatformat:3 }}</td>
+                <td>{% if m.roc_auc is not None %}{{ m.roc_auc|floatformat:3 }}{% else %}—{% endif %}</td>
+                <td>
+                  {% if m.is_best %}
+                    <span class="badge badge--teal">Meilleur modèle</span>
+                  {% else %}
+                    <span class="badge badge--muted">Référence</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="f1-chart-title">
+      <header class="card__header">
+        <div>
+          <h2 id="f1-chart-title" class="card__title">F1-score par modèle</h2>
+          <p class="card__subtitle">
+            Visualisation rapide du score F1 — la métrique utilisée pour
+            sélectionner le meilleur modèle. La barre la plus haute correspond
+            au modèle retenu.
+          </p>
+        </div>
+        <span class="chip chip--teal">F1-score</span>
+      </header>
+      <div class="chart-wrap chart-wrap--sm">
+        <canvas id="f1-chart" height="120"></canvas>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="grouped-chart-title">
+      <header class="card__header">
+        <div>
+          <h2 id="grouped-chart-title" class="card__title">Toutes les métriques</h2>
+          <p class="card__subtitle">
+            Comparaison groupée d'Accuracy, Précision, Rappel, F1-score et
+            ROC-AUC pour chaque modèle.
+          </p>
+        </div>
+        <span class="chip chip--teal">Visualisation</span>
+      </header>
+      <div class="chart-wrap">
+        <canvas id="grouped-chart" height="120"></canvas>
+      </div>
+    </section>
+
+    <section class="card explainer" aria-labelledby="explainer-title">
+      <header class="card__header">
+        <div>
+          <h2 id="explainer-title" class="card__title">Comment lire ces métriques&nbsp;?</h2>
+          <p class="card__subtitle">
+            Brève explication clinique des indicateurs et de la sélection
+            automatique du meilleur modèle.
+          </p>
+        </div>
+        <span class="chip chip--blue">Repères</span>
+      </header>
+      <div class="explainer__grid">
+        <article class="explainer__item">
+          <h3 class="explainer__title">Pourquoi le <em>Rappel</em> est crucial en santé</h3>
+          <p>
+            En prédiction d'AVC, un <strong>faux négatif</strong> — un patient
+            réellement à risque que le modèle classe comme «&nbsp;faible
+            risque&nbsp;» — peut avoir des conséquences graves. Le rappel
+            mesure la proportion de cas à risque correctement détectés. Un
+            rappel élevé signifie que le modèle <em>passe à côté</em> de peu
+            de patients à risque, même au prix de quelques fausses alertes.
+          </p>
+        </article>
+        <article class="explainer__item">
+          <h3 class="explainer__title">Pourquoi le <em>F1-score</em> est utile</h3>
+          <p>
+            Le F1-score est la moyenne harmonique de la précision et du
+            rappel. Il pénalise les modèles déséquilibrés (très précis mais
+            qui manquent des cas, ou très sensibles mais qui crient au loup
+            trop souvent). Sur un jeu de données déséquilibré comme l'AVC
+            (où les cas positifs sont minoritaires), le F1-score est un
+            indicateur bien plus fiable que la simple accuracy.
+          </p>
+        </article>
+        <article class="explainer__item">
+          <h3 class="explainer__title">Pourquoi <em>{{ best.name|default:"ce modèle" }}</em> a été retenu</h3>
+          <p>
+            Le pipeline d'entraînement compare les six modèles sur le jeu
+            de test et marque <code>is_best_model=True</code> sur celui qui
+            obtient le meilleur F1-score{% if best %} (ici
+            <strong>{{ best.f1|floatformat:3 }}</strong> pour
+            {{ best.name }}){% endif %}. C'est ce modèle qui est chargé en
+            mémoire pour l'inférence en direct sur
+            <code>/prediction/new/</code>. Relancer
+            <code>python manage.py train_ai_models</code> recalcule l'ensemble
+            et peut désigner un autre vainqueur.
+          </p>
+        </article>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {% if has_models %}
+    {{ chart_payload|json_script:"avc-models-comparison-data" }}
+    <script>
+      (function () {
+        var raw = document.getElementById("avc-models-comparison-data");
+        if (!raw) { return; }
+        var payload = JSON.parse(raw.textContent);
+
+        var palette = {
+          accuracy:  "#2563eb",
+          precision: "#0ea5e9",
+          recall:    "#0d9488",
+          f1:        "#14b8a6",
+          rocauc:    "#f59e0b",
+          best:      "#0d9488",
+          neutral:   "#94a3b8"
+        };
+
+        // ---- F1-only bar chart (best model in teal, others greyed) ----
+        var f1Ctx = document.getElementById("f1-chart");
+        if (f1Ctx) {
+          new Chart(f1Ctx, {
+            type: "bar",
+            data: {
+              labels: payload.labels,
+              datasets: [{
+                label: "F1-score",
+                data: payload.f1_only,
+                backgroundColor: payload.labels.map(function (_, i) {
+                  return i === payload.best_index ? palette.best : palette.neutral;
+                }),
+                borderRadius: 8,
+                maxBarThickness: 56
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { beginAtZero: true, suggestedMax: 1, ticks: { stepSize: 0.1 } }
+              }
+            }
+          });
+        }
+
+        // ---- Grouped bar chart: all 5 metrics per model ----
+        var groupedCtx = document.getElementById("grouped-chart");
+        if (groupedCtx) {
+          var colors = [palette.accuracy, palette.precision, palette.recall, palette.f1, palette.rocauc];
+          new Chart(groupedCtx, {
+            type: "bar",
+            data: {
+              labels: payload.labels,
+              datasets: payload.datasets.map(function (ds, i) {
+                return {
+                  label: ds.label,
+                  data: ds.data,
+                  backgroundColor: colors[i % colors.length],
+                  borderRadius: 6,
+                  maxBarThickness: 22
+                };
+              })
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: "bottom" } },
+              scales: {
+                y: { beginAtZero: true, suggestedMax: 1, ticks: { stepSize: 0.1 } }
+              }
+            }
+          });
+        }
+      })();
+    </script>
+  {% endif %}
+{% endblock %}

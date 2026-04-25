@@ -44,11 +44,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
         Voir l'historique
       </a>
-      <button type="button" class="btn btn--ghost" disabled aria-disabled="true" title="Bientôt disponible">
+      <a href="{% url 'ai_models:comparison' %}" class="btn btn--ghost">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
-        Comparaison des modèles
-        <span class="chip chip--muted chip--inline">Bientôt</span>
-      </button>
+        Voir la comparaison des modèles
+      </a>
     </div>
   </section>
 
