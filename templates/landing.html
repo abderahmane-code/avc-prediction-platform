@@ -1,0 +1,271 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AVC Predict · Plateforme intelligente de prédiction du risque d'AVC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+<body class="landing-body">
+  <header class="landing-nav" role="banner">
+    <a href="{% url 'home' %}" class="landing-nav__brand" aria-label="AVC Predict — accueil">
+      <span class="landing-nav__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.5 2 6 4 7.5V22h8v-4.5c2-1.5 4-4 4-7.5a8 8 0 0 0-8-8Z"/><path d="M9 22h6"/></svg>
+      </span>
+      <span class="landing-nav__brand-text">
+        <span class="landing-nav__title">AVC Predict</span>
+        <span class="landing-nav__sub">Plateforme clinique IA</span>
+      </span>
+    </a>
+    <nav class="landing-nav__links" aria-label="Navigation principale">
+      <a href="#presentation">Présentation</a>
+      <a href="#objectifs">Objectifs</a>
+      <a href="#technologies">Technologies</a>
+      <a href="#modeles">Modèles</a>
+    </nav>
+    <div class="landing-nav__actions">
+      {% if user.is_authenticated %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:index' %}">Tableau de bord</a>
+        <form method="post" action="{% url 'accounts:logout' %}" class="landing-nav__logout">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--ghost btn--sm">Déconnexion</button>
+        </form>
+      {% else %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'accounts:login' %}">Se connecter</a>
+        <a class="btn btn--primary btn--sm" href="{% url 'accounts:register' %}">Créer un compte</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="landing">
+
+    <section class="landing-hero" aria-labelledby="hero-title">
+      <div class="landing-hero__text">
+        <span class="landing-hero__eyebrow">Projet académique · Django + IA</span>
+        <h1 id="hero-title" class="landing-hero__title">
+          Plateforme intelligente de prédiction du risque d'AVC
+        </h1>
+        <p class="landing-hero__lead">
+          Une application web basée sur Django, PostgreSQL et l'Intelligence
+          Artificielle pour comparer des modèles de prédiction du risque d'AVC.
+        </p>
+        <div class="landing-hero__cta">
+          {% if user.is_authenticated %}
+            <a class="btn btn--primary" href="{% url 'dashboard:index' %}">Tableau de bord</a>
+            <a class="btn btn--secondary" href="{% url 'prediction:new' %}">+ Commencer une prédiction</a>
+            <a class="btn btn--ghost" href="{% url 'ai_models:comparison' %}">Voir la comparaison des modèles</a>
+          {% else %}
+            <a class="btn btn--primary" href="{% url 'accounts:login' %}">Se connecter</a>
+            <a class="btn btn--ghost" href="{% url 'accounts:register' %}">Créer un compte</a>
+            <a class="btn btn--secondary" href="{% url 'accounts:login' %}?next={% url 'prediction:new' %}">+ Commencer une prédiction</a>
+            <a class="btn btn--ghost" href="{% url 'accounts:login' %}?next={% url 'ai_models:comparison' %}">Voir la comparaison des modèles</a>
+          {% endif %}
+        </div>
+        <p class="landing-hero__note">
+          {% if user.is_authenticated %}
+            Connecté en tant que <strong>{{ user.username }}</strong>.
+          {% else %}
+            Les fonctions de prédiction nécessitent un compte.
+          {% endif %}
+        </p>
+      </div>
+      <aside class="landing-hero__art" aria-hidden="true">
+        <div class="landing-hero__card">
+          <div class="landing-hero__card-row">
+            <span class="landing-hero__chip landing-hero__chip--blue">Logistic Regression</span>
+            <span class="landing-hero__chip landing-hero__chip--teal">Random Forest</span>
+          </div>
+          <div class="landing-hero__card-row">
+            <span class="landing-hero__chip">SVM</span>
+            <span class="landing-hero__chip">KNN</span>
+            <span class="landing-hero__chip">Decision Tree</span>
+            <span class="landing-hero__chip">Naive Bayes</span>
+          </div>
+          <div class="landing-hero__bars" aria-hidden="true">
+            <span style="--h: 60%"></span>
+            <span style="--h: 78%"></span>
+            <span style="--h: 90%"></span>
+            <span style="--h: 70%"></span>
+            <span style="--h: 82%"></span>
+            <span style="--h: 95%"></span>
+          </div>
+          <div class="landing-hero__card-foot">
+            <span class="landing-hero__metric"><strong>F1</strong> · sélection</span>
+            <span class="landing-hero__metric"><strong>ROC-AUC</strong> · qualité</span>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="presentation" class="landing-section" aria-labelledby="presentation-title">
+      <header class="landing-section__head">
+        <span class="landing-section__eyebrow">01 · Présentation du projet</span>
+        <h2 id="presentation-title" class="landing-section__title">Une vitrine académique de l'IA appliquée à la santé</h2>
+        <p class="landing-section__lead">
+          Cette plateforme illustre, dans un cadre universitaire, comment des
+          modèles de Machine Learning peuvent assister la détection précoce du
+          risque d'accident vasculaire cérébral. Toutes les prédictions sont
+          calculées à partir de données patient saisies par l'utilisateur et
+          comparées aux performances de plusieurs modèles entraînés sur un
+          jeu de données publique.
+        </p>
+      </header>
+    </section>
+
+    <section id="objectifs" class="landing-section landing-section--alt" aria-labelledby="objectifs-title">
+      <header class="landing-section__head">
+        <span class="landing-section__eyebrow">02 · Objectifs</span>
+        <h2 id="objectifs-title" class="landing-section__title">Ce que la plateforme cherche à démontrer</h2>
+      </header>
+      <div class="landing-grid">
+        <article class="landing-feature">
+          <span class="landing-feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 8-6-16-3 8H2"/></svg>
+          </span>
+          <h3 class="landing-feature__title">Évaluer plusieurs modèles d'IA</h3>
+          <p>Comparer six classifieurs sur des métriques cliniquement pertinentes : précision, rappel, F1-score et ROC-AUC.</p>
+        </article>
+        <article class="landing-feature">
+          <span class="landing-feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3z"/><path d="M3 11h18v4H3z"/><path d="M3 19h18v2H3z"/></svg>
+          </span>
+          <h3 class="landing-feature__title">Stocker chaque prédiction</h3>
+          <p>Les saisies patient et les résultats sont persistés dans PostgreSQL avec un historique privé par utilisateur.</p>
+        </article>
+        <article class="landing-feature">
+          <span class="landing-feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </span>
+          <h3 class="landing-feature__title">Donner un retour clinique</h3>
+          <p>Chaque résultat est présenté avec une probabilité, un niveau de risque et une recommandation en français.</p>
+        </article>
+        <article class="landing-feature">
+          <span class="landing-feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+          </span>
+          <h3 class="landing-feature__title">Visualiser les performances</h3>
+          <p>Des graphiques Chart.js permettent de comparer F1-score et toutes les métriques agrégées d'un coup d'œil.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="technologies" class="landing-section" aria-labelledby="technologies-title">
+      <header class="landing-section__head">
+        <span class="landing-section__eyebrow">03 · Technologies utilisées</span>
+        <h2 id="technologies-title" class="landing-section__title">Une stack moderne et maîtrisée</h2>
+        <p class="landing-section__lead">
+          Le projet repose sur des outils open-source largement adoptés dans
+          l'industrie et l'académie.
+        </p>
+      </header>
+      <ul class="landing-badges" aria-label="Technologies utilisées">
+        <li class="landing-badge landing-badge--blue">Django</li>
+        <li class="landing-badge landing-badge--teal">PostgreSQL</li>
+        <li class="landing-badge">Python</li>
+        <li class="landing-badge landing-badge--blue">Scikit-learn</li>
+        <li class="landing-badge">Machine Learning</li>
+        <li class="landing-badge landing-badge--teal">Chart.js</li>
+      </ul>
+    </section>
+
+    <section id="modeles" class="landing-section landing-section--alt" aria-labelledby="modeles-title">
+      <header class="landing-section__head">
+        <span class="landing-section__eyebrow">04 · Modèles d'IA comparés</span>
+        <h2 id="modeles-title" class="landing-section__title">Six classifieurs entraînés sur le même jeu de données</h2>
+        <p class="landing-section__lead">
+          Le pipeline d'entraînement charge le dataset, applique le même
+          prétraitement à tous les modèles, puis sélectionne automatiquement
+          le meilleur sur la base du F1-score.
+        </p>
+      </header>
+      <div class="landing-models">
+        <article class="landing-model">
+          <h3>Logistic Regression</h3>
+          <p>Modèle linéaire simple, robuste et facilement interprétable.</p>
+        </article>
+        <article class="landing-model">
+          <h3>Random Forest</h3>
+          <p>Ensemble d'arbres de décision pour capter des interactions non linéaires.</p>
+        </article>
+        <article class="landing-model">
+          <h3>SVM</h3>
+          <p>Marges maximales sur les caractéristiques cliniques transformées.</p>
+        </article>
+        <article class="landing-model">
+          <h3>KNN</h3>
+          <p>Classification par proximité dans l'espace des caractéristiques.</p>
+        </article>
+        <article class="landing-model">
+          <h3>Decision Tree</h3>
+          <p>Arbre de décision unique, lecture rapide des règles cliniques.</p>
+        </article>
+        <article class="landing-model landing-model--accent">
+          <h3>Naive Bayes <span class="landing-model__pill">souvent retenu</span></h3>
+          <p>Modèle probabiliste léger, performant sur les classes déséquilibrées.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="landing-section landing-section--cta" aria-label="Appel à l'action">
+      <div class="landing-cta">
+        <div>
+          <h2 class="landing-cta__title">Prêt à explorer la plateforme ?</h2>
+          <p class="landing-cta__sub">
+            {% if user.is_authenticated %}
+              Lancez une nouvelle prédiction ou consultez la comparaison
+              détaillée des modèles.
+            {% else %}
+              Créez un compte pour soumettre des données patient et
+              consulter votre historique privé.
+            {% endif %}
+          </p>
+        </div>
+        <div class="landing-cta__buttons">
+          {% if user.is_authenticated %}
+            <a class="btn btn--primary" href="{% url 'prediction:new' %}">+ Commencer une prédiction</a>
+            <a class="btn btn--secondary" href="{% url 'ai_models:comparison' %}">Comparaison des modèles</a>
+          {% else %}
+            <a class="btn btn--primary" href="{% url 'accounts:register' %}">Créer un compte</a>
+            <a class="btn btn--ghost" href="{% url 'accounts:login' %}">Se connecter</a>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section landing-section--disclaimer" aria-labelledby="disclaimer-title">
+      <header class="landing-section__head">
+        <span class="landing-section__eyebrow">05 · Avertissement médical</span>
+        <h2 id="disclaimer-title" class="landing-section__title">Pour un usage académique uniquement</h2>
+      </header>
+      <div class="landing-disclaimer">
+        <span class="landing-disclaimer__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </span>
+        <p>
+          Cette application est un projet académique et ne remplace pas un
+          diagnostic médical. Les résultats fournis sont indicatifs ; toute
+          décision clinique doit être prise par un professionnel de santé
+          qualifié.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="landing-footer" role="contentinfo">
+    <div class="landing-footer__inner">
+      <span class="landing-footer__brand">
+        <span class="landing-nav__mark landing-nav__mark--sm" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.5 2 6 4 7.5V22h8v-4.5c2-1.5 4-4 4-7.5a8 8 0 0 0-8-8Z"/><path d="M9 22h6"/></svg>
+        </span>
+        AVC Predict — Plateforme clinique IA
+      </span>
+      <span class="landing-footer__note">Cette application est un projet académique et ne remplace pas un diagnostic médical.</span>
+    </div>
+  </footer>
+</body>
+</html>
