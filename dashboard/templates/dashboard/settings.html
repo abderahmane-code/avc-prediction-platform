@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Paramètres · AVC Predict{% endblock %}
+
+{% block content %}
+  <article class="card" aria-labelledby="profile-title">
+    <header class="card__header">
+      <div>
+        <h2 id="profile-title" class="card__title">Profil utilisateur</h2>
+        <p class="card__subtitle">Informations associées à votre compte AVC Predict.</p>
+      </div>
+      <span class="chip chip--blue">{{ account_type }}</span>
+    </header>
+
+    <dl class="patient-recap__grid">
+      <div>
+        <dt>Nom d'utilisateur</dt>
+        <dd>{{ request.user.get_username }}</dd>
+      </div>
+      <div>
+        <dt>Adresse e-mail</dt>
+        <dd>
+          {% if request.user.email %}
+            {{ request.user.email }}
+          {% else %}
+            <span class="muted">Non renseignée</span>
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt>Type de compte</dt>
+        <dd>{{ account_type }}</dd>
+      </div>
+      <div>
+        <dt>Date d'inscription</dt>
+        <dd>{{ request.user.date_joined|date:"d/m/Y" }}</dd>
+      </div>
+    </dl>
+  </article>
+
+  <article class="card" aria-labelledby="prefs-title">
+    <header class="card__header">
+      <div>
+        <h2 id="prefs-title" class="card__title">Préférences de l'application</h2>
+        <p class="card__subtitle">Préférences générales de l'interface AVC Predict.</p>
+      </div>
+      <span class="chip chip--blue">À venir</span>
+    </header>
+
+    <dl class="patient-recap__grid">
+      <div>
+        <dt>Langue</dt>
+        <dd>Français</dd>
+      </div>
+      <div>
+        <dt>Format de date</dt>
+        <dd>JJ/MM/AAAA</dd>
+      </div>
+      <div>
+        <dt>Thème</dt>
+        <dd>Clair (médical)</dd>
+      </div>
+    </dl>
+
+    <p class="empty-state">Les paramètres avancés seront ajoutés dans une prochaine version.</p>
+  </article>
+
+  <p class="medical-disclaimer">Cette application est un projet académique et ne remplace pas un diagnostic médical.</p>
+{% endblock %}

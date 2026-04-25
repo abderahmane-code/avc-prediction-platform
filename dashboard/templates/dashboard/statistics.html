@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Statistiques · AVC Predict{% endblock %}
+
+{% block content %}
+  <section class="stat-grid" aria-label="Indicateurs personnels">
+    {% for stat in stats %}
+      <article class="stat-card stat-card--{{ stat.accent }}">
+        <div class="stat-card__icon" aria-hidden="true">
+          {% if stat.icon == "activity" %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          {% elif stat.icon == "alert" %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          {% elif stat.icon == "trophy" %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 4h3v3a3 3 0 0 1-3 3"/><path d="M7 4H4v3a3 3 0 0 0 3 3"/></svg>
+          {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+          {% endif %}
+        </div>
+        <div class="stat-card__body">
+          <div class="stat-card__label">{{ stat.label }}</div>
+          <div class="stat-card__value">{{ stat.value }}</div>
+          <div class="stat-card__delta">{{ stat.delta }}</div>
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <article class="card" aria-labelledby="risk-distribution-title">
+    <header class="card__header">
+      <div>
+        <h2 id="risk-distribution-title" class="card__title">Répartition de mes prédictions</h2>
+        <p class="card__subtitle">Cas à risque élevé contre risque faible — calculé sur l'ensemble de mes prédictions.</p>
+      </div>
+      <span class="chip chip--blue">Mes données</span>
+    </header>
+
+    {% if has_predictions %}
+      <div class="chart-wrap chart-wrap--sm">
+        <canvas id="risk-distribution-chart"
+                data-high="{{ high_count }}"
+                data-low="{{ low_count }}"
+                aria-label="Graphique de répartition risque élevé / risque faible"
+                role="img"></canvas>
+      </div>
+    {% else %}
+      <p class="empty-state">
+        Aucune prédiction enregistrée pour le moment. Commencez par
+        <a href="{% url 'prediction:new' %}">créer une nouvelle prédiction</a>.
+      </p>
+    {% endif %}
+  </article>
+
+  <article class="card" aria-labelledby="ai-models-summary-title">
+    <header class="card__header">
+      <div>
+        <h2 id="ai-models-summary-title" class="card__title">Modèles d'IA entraînés</h2>
+        <p class="card__subtitle">Synthèse globale issue de la table <code>AIModelPerformance</code>.</p>
+      </div>
+      <a href="{% url 'ai_models:comparison' %}" class="chip chip--link">Voir la comparaison &rarr;</a>
+    </header>
+
+    <dl class="patient-recap__grid">
+      <div>
+        <dt>Modèles entraînés</dt>
+        <dd>{{ trained_models_count }}</dd>
+      </div>
+      <div>
+        <dt>Meilleur modèle</dt>
+        <dd>
+          {% if best_model_name %}
+            {{ best_model_name }}
+          {% else %}
+            —
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt>F1-score</dt>
+        <dd>
+          {% if best_model_f1 is not None %}
+            {{ best_model_f1|floatformat:3 }}
+          {% else %}
+            —
+          {% endif %}
+        </dd>
+      </div>
+    </dl>
+
+    {% if not trained_models_count %}
+      <p class="empty-state">
+        Aucun modèle IA entraîné pour le moment. Exécutez la commande :
+        <code>python manage.py train_ai_models</code>
+      </p>
+    {% endif %}
+  </article>
+
+  <p class="medical-disclaimer">Cette application est un projet académique et ne remplace pas un diagnostic médical.</p>
+{% endblock %}
+
+{% block scripts %}
+  {% if has_predictions %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+      (function () {
+        var canvas = document.getElementById("risk-distribution-chart");
+        if (!canvas) return;
+        var high = parseInt(canvas.dataset.high || "0", 10);
+        var low = parseInt(canvas.dataset.low || "0", 10);
+        new Chart(canvas, {
+          type: "doughnut",
+          data: {
+            labels: ["Risque élevé", "Risque faible"],
+            datasets: [{
+              data: [high, low],
+              backgroundColor: ["#ef4444", "#0d9488"],
+              borderColor: "#ffffff",
+              borderWidth: 2,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "bottom" },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    var total = high + low || 1;
+                    var pct = (ctx.parsed / total * 100).toFixed(1).replace(".", ",");
+                    return ctx.label + " : " + ctx.parsed + " (" + pct + " %)";
+                  },
+                },
+              },
+            },
+          },
+        });
+      })();
+    </script>
+  {% endif %}
+{% endblock %}
