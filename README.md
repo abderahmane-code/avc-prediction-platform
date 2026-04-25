@@ -1,634 +1,315 @@
 # Plateforme intelligente de prédiction du risque d'AVC
 
-Academic project: a Django web platform that predicts stroke risk (AVC) and
-compares multiple AI models.
+> **Cette application est un projet académique et ne remplace pas un diagnostic médical.**
 
-## Tech stack
+Plateforme web Django + PostgreSQL + scikit-learn permettant de :
+- saisir les données cliniques d'un patient,
+- calculer un risque d'AVC à partir de plusieurs modèles d'apprentissage automatique,
+- comparer les performances des modèles entraînés,
+- consulter l'historique de chaque utilisateur,
+- exporter chaque rapport au format PDF.
+
+---
+
+## 1. Description du projet
+
+Application web académique illustrant un pipeline complet de prédiction médicale assistée par IA :
+- Authentification par utilisateur — chaque clinicien voit uniquement ses propres patients.
+- Saisie d'un formulaire patient, prédiction calculée par le meilleur modèle entraîné.
+- Tableau de bord dynamique alimenté par PostgreSQL.
+- Page de comparaison des modèles d'IA (table + graphiques Chart.js).
+- Export PDF du rapport de prédiction (ReportLab).
+- Page d'accueil publique présentant le projet.
+
+---
+
+## 2. Fonctionnalités
+
+| Domaine | Fonctionnalité |
+|---|---|
+| Public | Page d'accueil `/` avec présentation, technologies, modèles comparés, avertissement médical |
+| Authentification | `/accounts/{register,login,logout}/` (formulaires en français, messages utilisateur) |
+| Prédiction | Formulaire patient validé, inférence en direct, page de résultat avec risque + recommandation |
+| Historique | `/historique/` filtré par utilisateur (les administrateurs voient tout) |
+| Détail | `/prediction/detail/<id>/` avec récap clinique + jauge circulaire |
+| Export | `/prediction/detail/<id>/pdf/` — PDF A4 d'une page (ReportLab) |
+| Modèles | `/modeles/comparaison/` : tableau + graphiques Chart.js + explication pédagogique |
+| Tableau de bord | Statistiques live (total / risques élevés / meilleur modèle / précision moyenne) + prédictions récentes |
+| Admin | `/admin/` — accès complet pour le staff/superuser |
+
+---
+
+## 3. Technologies utilisées
+
+| Couche | Outils |
+|---|---|
+| Backend | Python 3.10+, Django 5.x |
+| Base de données | PostgreSQL 14+ |
+| Machine Learning | scikit-learn, pandas, numpy, joblib |
+| PDF | ReportLab |
+| Frontend | HTML5 / CSS3 (variables, grid, flex) / JavaScript vanilla |
+| Graphiques | Chart.js (CDN) |
+| Police | Inter (Google Fonts) |
+
+Modèles comparés : **Logistic Regression**, **Random Forest**, **SVM**, **Naive Bayes**, **K-Nearest Neighbors**, **Decision Tree**.
+
+---
+
+## 4. Installation
+
+### 4.1 Prérequis
 
 - Python 3.10+
-- Django 5.x
-- PostgreSQL
-- HTML / CSS / JavaScript (Bootstrap or clean custom CSS — added later)
-- scikit-learn (integrated in a later step)
+- PostgreSQL 14+
+- Git
 
-## Project structure
-
-```
-avc-prediction-platform/
-├── avc_prediction_platform/   # Django project (settings, urls, wsgi, asgi)
-├── accounts/                  # User accounts / auth app
-├── dashboard/                 # Dashboard app
-├── prediction/                # Stroke-risk prediction app
-├── ai_models/                 # AI model management & comparison app
-├── manage.py
-├── requirements.txt
-├── .env.example
-└── README.md
-```
-
-## 1. Install dependencies
+### 4.2 Cloner et créer un environnement virtuel
 
 ```bash
 git clone https://github.com/abderahmane-code/avc-prediction-platform.git
 cd avc-prediction-platform
-
 python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-
+source .venv/bin/activate           # Linux / macOS
+# .venv\Scripts\activate            # Windows PowerShell
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## 2. Configure environment variables
+### 4.3 Configuration PostgreSQL
 
-Copy the example file and edit it with your own values:
+```bash
+# Démarrer PostgreSQL (Ubuntu / Debian)
+sudo systemctl start postgresql
+# ou
+sudo pg_ctlcluster 14 main start
+
+# Créer la base et l'utilisateur
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+sudo -u postgres psql -c "CREATE DATABASE avc_prediction;"
+```
+
+### 4.4 Variables d'environnement
+
+Copier le modèle puis ajuster les valeurs si nécessaire :
 
 ```bash
 cp .env.example .env
 ```
 
-`.env` keys:
+Variables disponibles (`.env.example`) :
 
-| Variable      | Description                           | Example             |
-|---------------|---------------------------------------|---------------------|
-| `SECRET_KEY`  | Django secret key                     | `a-long-random-str` |
-| `DEBUG`       | Django debug flag                     | `True`              |
-| `ALLOWED_HOSTS` | Comma-separated allowed hosts       | `localhost,127.0.0.1` |
-| `DB_NAME`     | PostgreSQL database name              | `avc_prediction`    |
-| `DB_USER`     | PostgreSQL user                       | `postgres`          |
-| `DB_PASSWORD` | PostgreSQL password                   | `postgres`          |
-| `DB_HOST`     | PostgreSQL host                       | `localhost`         |
-| `DB_PORT`     | PostgreSQL port                       | `5432`              |
+```
+SECRET_KEY=replace-me-with-a-long-random-string
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
 
-## 3. Create the PostgreSQL database
-
-Make sure PostgreSQL is running locally (e.g. via the `postgresql` service or
-Docker). Then create the database and user matching your `.env`:
-
-```bash
-# Using the system postgres user
-sudo -u postgres psql <<'SQL'
-CREATE DATABASE avc_prediction;
-CREATE USER postgres WITH PASSWORD 'postgres';
-GRANT ALL PRIVILEGES ON DATABASE avc_prediction TO postgres;
-ALTER DATABASE avc_prediction OWNER TO postgres;
-SQL
+DB_NAME=avc_prediction
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=localhost
+DB_PORT=5432
 ```
 
-On Ubuntu, if you don't have PostgreSQL yet:
+> Le fichier `.env` est ignoré par Git (`.gitignore`) — ne jamais le committer.
 
-```bash
-sudo apt update
-sudo apt install -y postgresql postgresql-contrib
-sudo service postgresql start
-```
-
-## 4. Run migrations
+### 4.5 Migrations
 
 ```bash
 python manage.py migrate
 ```
 
-## 5. Start the development server
+---
+
+## 5. Dataset
+
+Le projet utilise le dataset public **Stroke Prediction Dataset** (Kaggle).
+
+- Emplacement attendu : `prediction/ml/data/healthcare-dataset-stroke-data.csv`
+- Le dossier est versionné via un `.gitkeep`, **mais le CSV n'est pas committé** (cf. `.gitignore`).
+- Source : https://www.kaggle.com/datasets/fedesoriano/stroke-prediction-dataset
+
+```bash
+mkdir -p prediction/ml/data
+# Télécharger le CSV manuellement et le placer ici :
+# prediction/ml/data/healthcare-dataset-stroke-data.csv
+```
+
+---
+
+## 6. Entraînement des modèles d'IA
+
+```bash
+python manage.py train_ai_models
+```
+
+Cette commande :
+1. Lit le CSV `prediction/ml/data/healthcare-dataset-stroke-data.csv`.
+2. Entraîne les 6 modèles (Logistic Regression, Random Forest, SVM, Naive Bayes, KNN, Decision Tree).
+3. Persiste leurs métriques dans la table `AIModelPerformance` (PostgreSQL).
+4. Sauvegarde les artefacts (`prediction/ml/artifacts/best_model.pkl`, `preprocessor.pkl`, `model_metrics.json`) — non versionnés.
+
+Le modèle marqué « meilleur » (selon le F1-score) sera utilisé par `/prediction/new/` pour les inférences.
+
+---
+
+## 7. Lancer le serveur
 
 ```bash
 python manage.py runserver
+# http://127.0.0.1:8000/
 ```
 
-Open http://127.0.0.1:8000/ — you should see Django's default welcome page
-(the full UI is built in later steps).
+---
 
-## 6. (Optional) Create a superuser
+## 8. Créer un superutilisateur
 
 ```bash
 python manage.py createsuperuser
 ```
 
-Then visit http://127.0.0.1:8000/admin/ to log in.
+Le superutilisateur peut :
+- accéder à `/admin/` (table users, patients, prédictions, modèles),
+- voir l'historique de **tous** les utilisateurs,
+- exporter le PDF de **n'importe quelle** prédiction.
 
-## 7. Train the stroke-prediction models
+---
 
-The repository ships two equivalent ways to train the six classifiers:
+## 9. Routes principales
 
-* `python prediction/ml/train_models.py` — pure script, writes joblib +
-  JSON artifacts only.
-* `python manage.py train_ai_models` — Django management command that does
-  the same training **and** refreshes the `AIModelPerformance` rows in
-  PostgreSQL so the dashboard can read them.
+| Route | Auth | Description |
+|---|---|---|
+| `/` | Publique | Page d'accueil (hero, présentation, technologies, modèles, avertissement) |
+| `/accounts/register/` | Publique | Création de compte (username / email / password / confirm) |
+| `/accounts/login/` | Publique | Connexion |
+| `/accounts/logout/` | Authentifié | Déconnexion (POST CSRF) |
+| `/dashboard/` | Authentifié | Statistiques + prédictions récentes + comparaison rapide |
+| `/prediction/new/` | Authentifié | Formulaire patient → inférence → redirection vers `/prediction/result/<id>/` |
+| `/prediction/result/<patient_id>/` | Owner / staff | Page de résultat (jauge, recommandation) |
+| `/prediction/detail/<result_id>/` | Owner / staff | Détail d'une prédiction de l'historique |
+| `/prediction/detail/<result_id>/pdf/` | Owner / staff | **Export PDF** du rapport |
+| `/historique/` | Authentifié | Historique scopé à l'utilisateur (staff voit tout) |
+| `/modeles/comparaison/` | Authentifié | Tableau + graphiques + explication des modèles |
+| `/admin/` | Staff | Administration Django |
 
-Use the management command for normal operation; the script is kept for
-quick offline runs without the Django context.
+> Les routes « Owner / staff » renvoient **404** si l'utilisateur authentifié n'est ni propriétaire ni staff (pas de fuite d'existence de ligne).
 
-### 7.1 Place the dataset
+---
 
-Download `healthcare-dataset-stroke-data.csv` (the public Kaggle stroke
-dataset — `fedesoriano/stroke-prediction-dataset`) and copy it to:
+## 10. Export PDF
 
-```
-prediction/ml/data/healthcare-dataset-stroke-data.csv
-```
+Bouton **« Exporter le rapport PDF »** sur `/prediction/detail/<id>/`.
 
-The CSV is git-ignored on purpose; only the empty `data/` folder is tracked
-via a `.gitkeep` file. Expected columns:
+Le PDF généré (ReportLab, A4, une page) contient :
+- bandeau de marque + bandeau pied-de-page (avertissement + numéro de page sur chaque page),
+- titre `Rapport de prédiction AVC` + nom du projet,
+- identifiant, date, clinicien,
+- tableau **Données du patient** (10 champs avec libellés français),
+- tableau **Résultat de la prédiction** (niveau de risque rouge si élevé, sarcelle si faible — probabilité — modèle),
+- bloc **Recommandation clinique**,
+- bloc **Avertissement médical** (texte exact).
 
-```
-id, gender, age, hypertension, heart_disease, ever_married, work_type,
-Residence_type, avg_glucose_level, bmi, smoking_status, stroke
-```
+Implémentation :
+- Module `prediction/pdf_report.py` (ReportLab + Platypus).
+- Vue `prediction.views.detail_pdf`, route nommée `prediction:detail_pdf`.
+- Dépendance : `reportlab>=4.0` (pure Python, aucune dépendance système).
 
-If the file is missing, both entry points print:
+---
 
-> `Dataset not found. Please place healthcare-dataset-stroke-data.csv inside prediction/ml/data/`
+## 11. Avertissement médical
 
-### 7.2 Run the training command
+> **Cette application est un projet académique et ne remplace pas un diagnostic médical.**
 
-```bash
-source .venv/bin/activate
-python manage.py train_ai_models
-```
+Cet avertissement est rappelé :
+- sur la page d'accueil publique,
+- en pied de chaque page authentifiée,
+- dans le PDF exporté (corps + pied de page),
+- sur la page de comparaison des modèles.
 
-Optional flags: `--csv path/to/file.csv`, `--test-size 0.2`, `--random-state 42`.
+---
 
-The command:
+## 12. Note académique
 
-1. Trains Logistic Regression, KNN, Decision Tree, Random Forest, SVM and
-   Naive Bayes (stratified split, `zero_division=0` everywhere, and
-   `class_weight="balanced"` for LR / DT / RF / SVM).
-2. Saves three artifacts under `prediction/ml/artifacts/`:
-   - `preprocessor.pkl` — fitted ColumnTransformer (impute + scale + one-hot)
-   - `best_model.pkl` — best classifier by F1-score on the test set
-   - `model_metrics.json` — all six models' metrics + dataset/split metadata
-3. Wraps the database update in an `atomic()` transaction: deletes every
-   existing `AIModelPerformance` row and inserts one row per trained model,
-   flagging the F1-best model with `is_best_model=True`.
+Projet réalisé dans le cadre d'un travail académique. Les modèles sont entraînés sur un dataset public (Kaggle) à des fins pédagogiques. Aucun usage clinique réel n'est prévu ni recommandé.
 
-### 7.3 Verify in Django admin
+---
 
-```bash
-python manage.py runserver
-# then open http://127.0.0.1:8000/admin/ai_models/aimodelperformance/
-```
+## 13. Guide de présentation (Démo)
 
-You should see exactly six rows after a successful training run, with
-exactly one row marked as `Is best model`.
+Suggestion de parcours pour la soutenance / démonstration devant l'administration de l'institut.
 
-### 7.4 Dashboard
+### Étape 1 — Page d'accueil publique (avant connexion)
+1. Ouvrir `http://127.0.0.1:8000/`.
+2. Montrer : titre, sous-titre, sections **Présentation / Objectifs / Technologies / Modèles d'IA comparés / Avertissement médical**.
+3. Cliquer sur **« Commencer une prédiction »** : on est redirigé vers `/accounts/login/?next=/prediction/new/` → démontre la protection.
 
-`http://127.0.0.1:8000/dashboard/` reads `AIModelPerformance` from
-PostgreSQL and renders:
+### Étape 2 — Création de compte / Connexion
+1. Cliquer sur **« Créer un compte »**.
+2. Renseigner username / email / mot de passe / confirmation.
+3. Validation → redirection automatique vers `/dashboard/` avec un message de bienvenue.
 
-* the `Meilleur modèle` and `Précision moyenne` stat cards,
-* the per-model comparison table (sorted by best, then F1),
-* the Chart.js bar chart with per-model Accuracy / Precision / Recall / F1 /
-  ROC-AUC.
+### Étape 3 — Tableau de bord dynamique
+1. Pointer les **4 cartes statistiques** (total prédictions, risques élevés, % risques élevés, meilleur modèle).
+2. Montrer la carte **« Prédictions récentes »** avec lien vers chaque détail.
+3. Insister : toutes les valeurs proviennent de PostgreSQL (`PredictionResult` + `AIModelPerformance`).
 
-When the table is empty (e.g. before the first training run), every metric
-falls back to a `—` placeholder and a hint asking the user to run
-`python manage.py train_ai_models`. The page still renders correctly.
+### Étape 4 — Démonstration d'une prédiction
+1. Cliquer sur **« + Nouvelle prédiction »**.
+2. Remplir le formulaire (par ex. patient âgé, hypertension, tabagique → forte probabilité de risque élevé).
+3. Soumettre → page de résultat avec :
+   - jauge circulaire (rouge si élevé, sarcelle si faible),
+   - probabilité, modèle utilisé, recommandation clinique en français.
 
-## 8. Live prediction workflow
+### Étape 5 — Comparaison des modèles d'IA
+1. Cliquer sur **« Comparaison des modèles »** dans la sidebar.
+2. Montrer :
+   - le **tableau comparatif** (6 modèles × 5 métriques) avec la ligne du meilleur modèle surlignée + icône trophée,
+   - les **deux graphiques Chart.js** (F1-score par modèle + grouped bar de toutes les métriques),
+   - l'**explication pédagogique** (pourquoi le rappel/Recall est crucial en médecine, pourquoi le F1-score, pourquoi ce modèle a été choisi).
 
-`/prediction/new/` is wired to the trained artifacts. On a valid submission:
+### Étape 6 — Export PDF du rapport
+1. Retourner sur `/historique/` → cliquer sur une prédiction.
+2. Sur la page de détail, cliquer **« Exporter le rapport PDF »**.
+3. Ouvrir le PDF téléchargé : montrer le bandeau, le tableau patient, le bloc résultat coloré, la recommandation, l'avertissement médical.
 
-1. The patient record is saved to `PatientData` (with the current user when
-   authenticated).
-2. The view loads `prediction/ml/artifacts/preprocessor.pkl` and
-   `prediction/ml/artifacts/best_model.pkl` (cached in-process and invalidated
-   automatically when the files change on disk, so re-running the training
-   command picks up immediately without a server restart).
-3. The patient is mapped to the exact training schema — including the
-   `residence_type → Residence_type` rename and `ever_married` boolean →
-   `"Yes"/"No"` mapping — and scored.
-4. Probability is read from `predict_proba(X)[:, 1]` when available, with a
-   `decision_function` fallback that is squashed through a logistic, and a
-   final `predict`-only fallback returning `1.0` / `0.0`.
-5. A `PredictionResult` row is persisted with the model name (read from
-   `model_metrics.json`), the boolean prediction, the French risk label,
-   the probability and the French recommendation.
-6. The user is redirected to `/prediction/result/<id>/`, which displays a
-   circular probability gauge, the `Risque d'AVC : Élevé` / `Risque d'AVC :
-   Faible` summary, the model name, the recommendation, and the medical
-   disclaimer.
+### Étape 7 — Cloisonnement par utilisateur (sécurité)
+1. Se déconnecter, créer / se connecter avec un **second compte**.
+2. Aller sur `/historique/` → vide ou ne contient que les prédictions du second utilisateur.
+3. Tenter `/prediction/detail/<id-du-premier-user>/` → **404** (pas de fuite).
 
-### 8.1 Missing-model graceful fallback
+### Étape 8 — Administration
+1. Se connecter avec le superutilisateur.
+2. Ouvrir `/admin/` → montrer les tables `User`, `PatientData`, `PredictionResult`, `AIModelPerformance`.
+3. Revenir sur `/historique/` → le superuser voit **toutes** les prédictions.
 
-If `best_model.pkl` or `preprocessor.pkl` is absent (e.g. before the very
-first training run, or when the artifacts were deleted), the form **still
-saves** the `PatientData` row but **does not** create a `PredictionResult`.
-The result page then renders an inline error block with the exact message:
+---
 
-> Le modèle IA n'est pas encore entraîné. Veuillez exécuter la commande :
-> `python manage.py train_ai_models`
-
-No 500 error, no crash — only the prediction half is skipped.
-
-### 8.2 Dashboard live counts
-
-See §10 below — every dashboard card / table / chart is now read from
-PostgreSQL.
-
-## 9. Prediction history
-
-`/historique/` lists every saved `PredictionResult` (most recent first) with a
-table covering Date / Âge / Genre / Hypertension / Maladie cardiaque /
-Glucose / IMC / Modèle utilisé / Résultat / Probabilité, plus a `Détails`
-button that opens `/prediction/detail/<id>/`. Quick filters
-(`Tous` / `Risque élevé` / `Risque faible`) are wired to the
-`?risk=high|low|all` querystring. The `Historique` sidebar entry is the
-canonical entry point and is highlighted as active on both pages.
-
-When no `PredictionResult` rows exist (e.g. fresh DB), the page renders a
-clean empty state with the exact French message
-`Aucune prédiction enregistrée pour le moment.` instead of crashing.
-
-The detail page reuses the same probability gauge, risk-coloured chip,
-recommendation block, patient recap, and medical disclaimer as the
-post-submission `/prediction/result/<id>/` page — but is anchored on the
-`PredictionResult` id so it stays addressable from the history table.
-
-## 10. Fully dynamic dashboard
-
-`/dashboard/` is entirely driven by PostgreSQL — no hardcoded values.
-
-**Stat cards** (top row):
-
-| Card | Source |
-| ---- | ------ |
-| Prédictions totales | `PredictionResult.objects.count()` |
-| Cas à risque élevé | `PredictionResult.objects.filter(prediction=True).count()` + percentage of total |
-| Meilleur modèle | `AIModelPerformance` row with `is_best_model=True`, with its F1 in the delta line |
-| Précision moyenne | `AIModelPerformance.objects.aggregate(Avg("precision"))` over all rows |
-
-**Actions rapides** card: three CTAs:
-
-* `Nouvelle prédiction` → `/prediction/new/`
-* `Voir l'historique` → `/historique/`
-* `Comparaison des modèles` — disabled placeholder with a `Bientôt` chip
-  until that page lands as its own step.
-
-**Prédictions récentes** card: the 5 most recent `PredictionResult` rows
-(joined to `PatientData` via `select_related`) with Date / Âge / Modèle /
-Résultat (red `Risque élevé` / teal `Risque faible` badge) / Probabilité /
-`Détails` link to `/prediction/detail/<id>/`. A `Voir tout` chip in the
-header links to `/historique/`.
-
-**Comparaison des modèles d'IA** table: every `AIModelPerformance` row,
-sorted with the best-by-F1 first (highlighted via `models-table__row--best`
-+ a `Meilleur` badge).
-
-**Comparaison des performances** chart: Chart.js bar chart fed by
-`json_script` with the same `AIModelPerformance` rows — Accuracy /
-Precision / Recall / F1 / ROC-AUC per model. ROC-AUC nulls render as 0.
-
-### 10.1 Empty states
-
-| Table empty | Behaviour |
-| ----------- | --------- |
-| No `PredictionResult` | `Prédictions totales = 0`, `Cas à risque élevé = 0`, recent-predictions card shows `Aucune prédiction enregistrée pour le moment.` |
-| No `AIModelPerformance` | `Meilleur modèle = —`, `Précision moyenne = —` (`Lancer 'python manage.py train_ai_models'` hint), comparison table shows the same hint, chart card shows an empty-state |
-| Both empty | All four cards + both tables + chart show the placeholders above; no crash |
-
-### 10.2 Verifying the dashboard locally
+## 14. Vérifications finales
 
 ```bash
 python manage.py check
 python manage.py migrate
-python manage.py train_ai_models   # populates AIModelPerformance + the 3 .pkl/.json artifacts
+python manage.py train_ai_models   # nécessite le CSV en place
 python manage.py runserver
-# Submit at least 2 predictions via /prediction/new/, then open /dashboard/.
-# Stat cards / recent-predictions / comparison table / chart should all
-# reflect live PostgreSQL state.
 ```
 
-To exercise the empty path:
+Toutes les routes du §9 doivent répondre comme indiqué.
 
-```python
-from prediction.models import PredictionResult
-from ai_models.models import AIModelPerformance
-PredictionResult.objects.all().delete()
-AIModelPerformance.objects.all().delete()
-```
+---
 
-Then reload `/dashboard/` and confirm the placeholders described in §10.1.
+## 15. Pistes d'amélioration possibles
 
-## 11. Authentication (Step 10)
+Hors périmètre du projet académique, mais envisageable pour une suite :
+- Tests unitaires et d'intégration (pytest + pytest-django + factories).
+- CI/CD GitHub Actions (lint + tests + déploiement).
+- Internationalisation (i18n) au-delà du français.
+- Calibration probabiliste (Platt scaling / isotonic) pour des probabilités mieux étalonnées.
+- Explainability (SHAP / LIME) sur la page de détail.
+- Conteneurisation (`Dockerfile` + `docker-compose.yml` Postgres + Django + nginx).
+- Stockage signé des PDFs sur S3/GCS pour archivage long terme.
+- Rôles plus fins (médecin / chercheur / administrateur).
 
-The platform uses Django's stock authentication. The `accounts` app exposes:
+---
 
-| URL | View | Purpose |
-| --- | ---- | ------- |
-| `/accounts/register/` | `accounts.views.register` | Sign-up (username, e-mail, password, confirmation). Logs in immediately after success and redirects to `/dashboard/`. |
-| `/accounts/login/`    | `accounts.views.FrenchLoginView` | French login form. Wrong credentials show `Nom d'utilisateur ou mot de passe incorrect.` |
-| `/accounts/logout/`   | `accounts.views.logout_view` (POST) | Logs out and bounces to `/accounts/login/` with a French goodbye message. |
+## Licence
 
-`LOGIN_URL = "accounts:login"`, `LOGIN_REDIRECT_URL = "dashboard:index"`.
-
-### 11.1 Protected pages
-
-The following pages require an authenticated user (`@login_required`).
-Anonymous visitors are redirected to `/accounts/login/?next=...`:
-
-- `/dashboard/`
-- `/prediction/new/`
-- `/prediction/result/<patient_id>/`
-- `/prediction/detail/<result_id>/`
-- `/historique/`
-
-### 11.2 User-owned data
-
-- `PatientData.user` and `PredictionResult.user` are populated automatically on submission (`prediction.views.new_prediction`).
-- `/historique/` only lists the current user's `PredictionResult` rows.
-- `/prediction/detail/<id>/` and `/prediction/result/<id>/` return **404** for non-owners (so we don't leak row existence).
-- The dashboard stat cards (`Prédictions totales`, `Cas à risque élevé`) and the `Prédictions récentes` table are scoped to `request.user`. The model-performance metrics remain global because they describe the trained AI, not user activity.
-- **Admin bypass:** Django staff / superusers see every row, both in Django admin (`/admin/`) and on `/historique/` and the detail/result pages.
-
-### 11.3 Topbar
-
-When authenticated, the topbar shows `Bonjour, <username>` and a `Déconnexion`
-button (CSRF-protected POST form). When anonymous, it shows `Connexion` +
-`Créer un compte` links instead. The sidebar footer also reflects the
-current user's username + role (`Compte clinicien` / `Administrateur`).
-
-### 11.4 Verifying authentication locally
-
-```bash
-python manage.py check
-python manage.py migrate
-python manage.py runserver
-# 1. Open /accounts/register/ and create user A
-# 2. Submit /prediction/new/ as user A → /historique/ shows the row
-# 3. Click "Déconnexion" → redirected to /accounts/login/
-# 4. Register user B, submit a different prediction → /historique/ shows only B's row
-# 5. While logged in as B, visit /prediction/detail/<A's id>/ → 404
-# 6. Try /dashboard/ logged out → redirected to /accounts/login/
-```
-
-## 12. Model comparison page (Step 11)
-
-Step 11 introduces a dedicated, login-protected page that exposes every row
-of `AIModelPerformance` in detail.
-
-### 12.1 URL & layout
-
-| URL | View | Notes |
-| --- | --- | --- |
-| `/modeles/comparaison/` | `ai_models.views.comparison` | `@login_required` — anonymous users land on `/accounts/login/?next=…`. |
-
-The page is composed of:
-
-1. **CTA card** — `Nouvelle prédiction` (blue) + `Voir l'historique` (teal).
-2. **Best-model spotlight** — trophy icon, model name, F1-score, `Meilleur modèle` badge.
-3. **Tableau comparatif** — `Modèle / Accuracy / Précision / Rappel / F1-score / ROC-AUC / Statut`. The best-model row is highlighted via `models-table__row--best` and prefixed with a small trophy.
-4. **F1-score par modèle** — Chart.js bar chart (best model in teal, others in slate grey).
-5. **Toutes les métriques** — Chart.js grouped bar chart with Accuracy / Précision / Rappel / F1-score / ROC-AUC for every model.
-6. **Comment lire ces métriques ?** — three short French explainers: why Recall matters in medical prediction, why F1 balances precision & recall, and why the best model was selected.
-
-### 12.2 Empty state
-
-If `AIModelPerformance` has zero rows, the page replaces the table + charts +
-explainer with a single card showing the exact spec text:
-
-> Aucun modèle IA entraîné pour le moment. Exécutez la commande&nbsp;: `python manage.py train_ai_models`
-
-The CTA card stays visible so users can still navigate to `/prediction/new/`
-or `/historique/`.
-
-### 12.3 Dashboard wiring
-
-The dashboard's `Voir la comparaison des modèles` button (Step 9) is now a
-working link to `/modeles/comparaison/` — the previous `disabled` / `Bientôt`
-state is gone. The sidebar's `Comparaison des modèles` link points to the
-same URL and is highlighted as active on the page.
-
-### 12.4 Verifying locally
-
-```bash
-python manage.py check
-python manage.py migrate
-python manage.py train_ai_models           # populates AIModelPerformance
-python manage.py runserver
-# Login as any user, then:
-# /modeles/comparaison/  → table, charts, explainer
-# Dashboard CTA "Voir la comparaison des modèles" → /modeles/comparaison/
-# Anonymous GET /modeles/comparaison/ → 302 to /accounts/login/?next=...
-# To test the empty state:
-#   python manage.py shell -c "from ai_models.models import AIModelPerformance; AIModelPerformance.objects.all().delete()"
-#   then reload /modeles/comparaison/
-```
-
-## 13. UI polish (Step 12)
-
-Step 12 is a CSS / asset-only sweep — no backend, view, URL, template logic, or
-inference change. The goal was to bring every page closer to a polished medical
-AI dashboard look: consistent depth, spacing, typography, focus states, and
-mobile behaviour.
-
-### 13.1 What changed visually
-
-- **Background** — soft radial wash (blue + teal) on the app body for depth.
-- **Sidebar active state** — left-edge accent bar (gradient blue → teal) and
-  bolder weight on the current page; clearer visual anchor than just the
-  filled blue pill.
-- **Brand mark** — same gradient logo, now with a subtle elevated shadow.
-- **Topbar** — `Bonjour, <username>` rendered as a soft pill (rounded
-  surface-muted background) instead of inline text; on screens narrower than
-  ~1100px the pill collapses so the title + actions stay legible.
-- **Stat cards** — gradient icon tiles (rather than flat soft-colour blocks)
-  and a 1px hover lift with a stronger border / shadow.
-- **Primary buttons** — subtle 180° gradient + a coloured drop-shadow that
-  matches the brand blue. Focus-visible state is now a 3px ring across all
-  buttons / chips / inputs.
-- **Tables** — alternating row tint (`nth-child(even)`) and sticky `<thead>`
-  inside the scroll wrap, so the column labels stay visible while scrolling
-  the comparison and history tables.
-- **Risk gauge** — soft drop-shadow halo behind the circular indicator on
-  the result and detail pages (no change to data).
-- **Mobile sidebar** — adds a backdrop element + JS toggling. Tapping the
-  backdrop or pressing Escape closes the drawer.
-- **Auth hero** — keeps the existing dark teal/blue gradient but adds a
-  subtle dotted texture overlay for a more "clinical" feel; the right-hand
-  card is unchanged.
-- Various smaller tweaks: pill chips on the active filter, larger tap
-  targets, refined disclaimer footer spacing, search field grows on
-  ≥1280px screens.
-
-### 13.2 Files touched
-
-- `static/css/style.css` — appended a `Step 12: visual polish` block (~150
-  lines) at the end of the file, plus a few tweaks to existing rules. No
-  existing rule was deleted.
-- `static/js/main.js` — small extension of the mobile sidebar toggle to
-  manage the new backdrop and Escape-to-close.
-- `templates/base.html` — added the `<div class="sidebar-backdrop">` element.
-
-No template, view, model, URL, training, or inference code was modified.
-
-### 13.3 Verifying locally (Step 12)
-
-```bash
-python manage.py check
-python manage.py migrate
-python manage.py runserver
-# Login as any user, then visit each page and compare to the screenshots in PR:
-#   /dashboard/                  → polished stat cards + recent + comparison + chart
-#   /prediction/new/             → polished form
-#   /prediction/result/<id>/     → circular gauge with halo, recommendation card
-#   /prediction/detail/<id>/     → same polish + breadcrumb + patient recap
-#   /historique/                 → filter chips + alternating rows + badges
-#   /modeles/comparaison/        → best-model card + comparison + 2 Chart.js charts
-#   /accounts/login/             → split hero + dotted overlay + card
-#   /accounts/register/          → same auth shell
-# Resize Chrome to ~480px wide → sidebar collapses; click hamburger → drawer slides
-# in with backdrop; tap backdrop or press Escape to close.
-```
-
-
-
-## 14. Public landing page (Step 13)
-
-`/` is now a **public landing page** rendered by `dashboard.views.home` and the
-`templates/landing.html` template. It is the first thing both anonymous and
-authenticated visitors see — `/dashboard/` continues to require a login.
-
-### 14.1 Layout
-
-The landing page has its own thin chrome (no sidebar / topbar) and these
-sections, in order:
-
-1. **Sticky top nav** — brand, in-page anchors (Présentation / Objectifs /
-   Technologies / Modèles), and auth actions on the right.
-2. **Hero** — `Plateforme intelligente de prédiction du risque d'AVC` +
-   subtitle + adaptive CTA buttons + a small visual card showing the six
-   model names and a synthetic bar chart.
-3. **§01 Présentation du projet**
-4. **§02 Objectifs** — 4-card grid (Évaluer plusieurs modèles d'IA / Stocker
-   chaque prédiction / Donner un retour clinique / Visualiser les
-   performances).
-5. **§03 Technologies utilisées** — pill badges: Django, PostgreSQL, Python,
-   Scikit-learn, Machine Learning, Chart.js.
-6. **§04 Modèles d'IA comparés** — 6-card grid (Logistic Regression, Random
-   Forest, SVM, KNN, Decision Tree, Naive Bayes — last one styled as the
-   "souvent retenu" model).
-7. **CTA banner** — gradient blue→teal with role-aware buttons.
-8. **§05 Avertissement médical** —
-   `Cette application est un projet académique et ne remplace pas un
-   diagnostic médical.`
-9. **Footer** — brand mark + the same disclaimer text.
-
-### 14.2 CTAs by auth state
-
-- **Anonymous** — header shows `Se connecter` and `Créer un compte`. Hero
-  shows all four buttons; the two "secured" CTAs route through
-  `/accounts/login/?next=…` so they bounce through login on the way to
-  `/prediction/new/` or `/modeles/comparaison/`. Bottom CTA banner shows
-  `Créer un compte` + `Se connecter`.
-- **Authenticated** — header shows `Tableau de bord` + `Déconnexion` (real
-  CSRF-protected POST form). Hero shows `Tableau de bord` +
-  `+ Commencer une prédiction` + `Voir la comparaison des modèles`. Bottom
-  CTA banner shows `+ Commencer une prédiction` +
-  `Comparaison des modèles`.
-
-### 14.3 Files touched
-
-- `avc_prediction_platform/urls.py` — replaced the `/` → `/dashboard/`
-  redirect with `path("", dashboard_views.home, name="home")`.
-- `dashboard/views.py` — added a thin public `home` view (renders the
-  template — no login required, no DB hit).
-- `templates/landing.html` — new template (standalone HTML — no
-  `extends "base.html"`).
-- `static/css/style.css` — appended a `Step 13: public landing page` block
-  (~280 lines). No existing rule was deleted.
-- `README.md` — this section.
-
-No backend logic, model code, training command, or auth view was touched.
-
-### 14.4 Verifying locally
-
-```bash
-python manage.py check
-python manage.py migrate
-python manage.py runserver
-# Anonymous:
-#   GET /                          → 200, landing page with login/register CTAs
-#   /accounts/login/?next=/prediction/new/   → reachable from the secured CTA
-#   GET /dashboard/                → 302 → /accounts/login/?next=/dashboard/
-# Authenticated:
-#   GET /                          → landing page with dashboard CTAs
-#   GET /dashboard/                → still works
-#   /prediction/new/, /historique/, /modeles/comparaison/ → still work
-```
-
-## 15. PDF report export (Step 14)
-
-Each prediction can be exported as a one-page A4 PDF report from the detail
-page.
-
-### 15.1 Route
-
-`GET /prediction/detail/<id>/pdf/` (URL name `prediction:detail_pdf`).
-
-The route is **login-protected** and uses the same access rules as
-`prediction:detail`:
-- the prediction's owner can export their own report,
-- staff / superusers can export any report,
-- everyone else gets a 404 (no leak of other users' rows),
-- a missing id returns 404.
-
-The response is `Content-Type: application/pdf` with
-`Content-Disposition: attachment; filename="rapport-prediction-<id>.pdf"`.
-
-### 15.2 Contents
-
-The PDF includes all the spec items, in this order:
-- AVC Predict brand bar
-- "RAPPORT CLINIQUE" eyebrow + title `Rapport de prédiction AVC`
-- Project name `Plateforme intelligente de prédiction du risque d'AVC`
-- Identifier, date, clinician
-- **Données du patient** table (genre, âge, hypertension, maladie cardiaque,
-  déjà marié(e), type d'emploi, zone de résidence, glycémie moyenne, IMC,
-  statut tabagique)
-- **Résultat de la prédiction** (niveau de risque — red/teal accent —,
-  probabilité, modèle utilisé)
-- **Recommandation clinique**
-- **Avertissement médical** card —
-  `Cette application est un projet académique et ne remplace pas un
-  diagnostic médical.`
-- Page footer with the same disclaimer + page number on every page.
-
-### 15.3 Dependency
-
-Uses [ReportLab](https://www.reportlab.com/) — pure Python, no system
-deps, and bundled in `requirements.txt`:
-
-```
-reportlab>=4.0
-```
-
-WeasyPrint was considered but rejected: it depends on Cairo / Pango /
-GdkPixbuf system libs that are not always present in production / CI
-environments.
-
-### 15.4 Files touched
-
-- `prediction/pdf_report.py` — **new** rendering module (ReportLab + Platypus
-  flowables).
-- `prediction/views.py` — added `detail_pdf` view.
-- `prediction/urls.py` — added `prediction:detail_pdf`.
-- `prediction/templates/prediction/detail.html` — added the
-  `Exporter le rapport PDF` button.
-- `requirements.txt` — added `reportlab>=4.0`.
-- `README.md` — this section.
-
-### 15.5 Verifying locally
-
-```bash
-pip install -r requirements.txt
-python manage.py check
-python manage.py migrate
-python manage.py runserver
-# Login as a normal user → /prediction/detail/<id>/
-# Click "Exporter le rapport PDF"
-# A PDF is downloaded named rapport-prediction-<id>.pdf
-# As a different normal user → /prediction/detail/<id>/pdf/ returns 404
-# As a superuser → can export any prediction's report
-```
+Projet académique — usage pédagogique uniquement.
