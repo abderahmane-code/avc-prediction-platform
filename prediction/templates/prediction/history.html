@@ -83,6 +83,9 @@
                 <a href="{% url 'prediction:detail' r.id %}" class="btn btn--ghost btn--sm">
                   Détails
                 </a>
+                <a href="{% url 'prediction:detail_pdf' r.id %}" class="btn btn--ghost btn--sm" target="_blank" rel="noopener" title="Exporter le rapport PDF">
+                  PDF
+                </a>
               </td>
             </tr>
           {% empty %}

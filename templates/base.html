@@ -64,7 +64,7 @@
           <div class="sidebar__footer-meta">
             <div class="sidebar__footer-name">{{ user.username }}</div>
             <div class="sidebar__footer-role">
-              {% if user.is_staff %}Administrateur{% else %}Compte clinicien{% endif %}
+              {% if user.is_staff or user.is_superuser %}Administrateur{% else %}Compte clinicien{% endif %}
             </div>
           </div>
         {% else %}
@@ -97,6 +97,17 @@
           </button>
           {% if user.is_authenticated %}
             <div class="topbar__user">
+              {% if user.is_staff or user.is_superuser %}
+                <span class="role-badge role-badge--admin" title="Compte administrateur">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 6v6c0 5 3.4 9.3 8 10 4.6-.7 8-5 8-10V6l-8-4Z"/></svg>
+                  Administrateur
+                </span>
+              {% else %}
+                <span class="role-badge role-badge--user" title="Compte utilisateur">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+                  Utilisateur
+                </span>
+              {% endif %}
               <span class="topbar__user-greeting">Bonjour, <strong>{{ user.username }}</strong></span>
               <form method="post" action="{% url 'accounts:logout' %}" class="topbar__user-form">
                 {% csrf_token %}
