@@ -134,3 +134,110 @@ def result(request, patient_id: int):
             "active_nav": "new_prediction",
         },
     )
+
+
+# --------------------------------------------------------------------------- #
+# Step 8: history + detail
+# --------------------------------------------------------------------------- #
+
+# Querystring values accepted by /historique/?risk=...
+RISK_FILTER_ALL = "all"
+RISK_FILTER_HIGH = "high"
+RISK_FILTER_LOW = "low"
+RISK_FILTER_VALUES = (RISK_FILTER_ALL, RISK_FILTER_HIGH, RISK_FILTER_LOW)
+
+
+def _row_payload(prediction: PredictionResult) -> dict:
+    """Build the per-row dict used by the history table template."""
+    patient = prediction.patient_data
+    proba_pct = max(0.0, min(1.0, prediction.risk_probability)) * 100
+    return {
+        "id": prediction.pk,
+        "created_at": prediction.created_at,
+        "age": patient.age,
+        "gender": _fr_label(GENDER_CHOICES_FR, patient.gender),
+        "hypertension": patient.hypertension,
+        "heart_disease": patient.heart_disease,
+        "avg_glucose_level": patient.avg_glucose_level,
+        "bmi": patient.bmi,
+        "model_name": prediction.model_name,
+        "is_high": bool(prediction.prediction),
+        "risk_label": prediction.risk_label,
+        "probability": prediction.risk_probability,
+        "probability_pct": proba_pct,
+    }
+
+
+def history(request):
+    """Render the global prediction history at ``/historique/``.
+
+    Supports a ``?risk=high|low|all`` filter (defaults to ``all``). The page
+    shows a clean French empty state when no :class:`PredictionResult` rows
+    are present (either at all, or for the active filter).
+    """
+    risk_filter = request.GET.get("risk", RISK_FILTER_ALL)
+    if risk_filter not in RISK_FILTER_VALUES:
+        risk_filter = RISK_FILTER_ALL
+
+    qs = PredictionResult.objects.select_related("patient_data").order_by("-created_at")
+    if risk_filter == RISK_FILTER_HIGH:
+        qs = qs.filter(prediction=True)
+    elif risk_filter == RISK_FILTER_LOW:
+        qs = qs.filter(prediction=False)
+
+    rows = [_row_payload(p) for p in qs]
+    total_all = PredictionResult.objects.count()
+
+    return render(
+        request,
+        "prediction/history.html",
+        {
+            "rows": rows,
+            "risk_filter": risk_filter,
+            "total_all": total_all,
+            "total_filtered": len(rows),
+            "page_title": "Historique des prédictions",
+            "active_nav": "history",
+        },
+    )
+
+
+def detail(request, result_id: int):
+    """Render a single :class:`PredictionResult` at ``/prediction/detail/<id>/``."""
+    prediction = get_object_or_404(
+        PredictionResult.objects.select_related("patient_data"),
+        pk=result_id,
+    )
+    patient = prediction.patient_data
+
+    fr = {
+        "gender": _fr_label(GENDER_CHOICES_FR, patient.gender),
+        "work_type": _fr_label(WORK_TYPE_CHOICES_FR, patient.work_type),
+        "residence_type": _fr_label(RESIDENCE_TYPE_CHOICES_FR, patient.residence_type),
+        "smoking_status": _fr_label(SMOKING_STATUS_CHOICES_FR, patient.smoking_status),
+    }
+
+    proba_pct = max(0.0, min(1.0, prediction.risk_probability)) * 100
+    risk = {
+        "is_high": bool(prediction.prediction),
+        "label": prediction.risk_label,
+        "model_name": prediction.model_name,
+        "probability": prediction.risk_probability,
+        "probability_pct": proba_pct,
+        "probability_pct_int": int(round(proba_pct)),
+        "recommendation": prediction.recommendation,
+        "created_at": prediction.created_at,
+    }
+
+    return render(
+        request,
+        "prediction/detail.html",
+        {
+            "patient": patient,
+            "prediction": prediction,
+            "risk": risk,
+            "fr": fr,
+            "page_title": f"Prédiction #{prediction.pk}",
+            "active_nav": "history",
+        },
+    )
