@@ -22,4 +22,6 @@ urlpatterns = [
     path("parametres/", dashboard_views.settings_view, name="settings"),
     # Step 16: platform management area (staff/superuser only).
     path("gestion/", include("management.urls", namespace="management")),
+    # Step 18: in-app notifications (login-protected).
+    path("notifications/", include("notifications.urls", namespace="notifications")),
 ]

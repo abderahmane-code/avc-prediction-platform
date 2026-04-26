@@ -18,11 +18,14 @@ from .ml.inference import (
 from .models import PatientData, PredictionResult
 from .risk import (
     FACTORS_NOTE,
+    LEVEL_HIGH,
     NO_FACTOR_MESSAGE,
     RISK_LEVEL_NOTE,
     compute_factors,
     compute_risk_level,
 )
+from notifications.models import Notification
+from notifications.services import notify
 
 
 def _fr_label(choices, value, fallback=""):
@@ -89,11 +92,40 @@ def new_prediction(request):
             result = _run_inference_and_save(patient, request.user)
             if result is None:
                 messages.warning(request, MISSING_MODEL_MESSAGE)
+                # Step 18: notify user the AI model artifacts are missing.
+                notify(
+                    user=request.user,
+                    title="Modèle IA non entraîné",
+                    message=(
+                        "Le modèle IA n'est pas encore entraîné. "
+                        "Veuillez exécuter python manage.py train_ai_models."
+                    ),
+                    notification_type=Notification.TYPE_WARNING,
+                )
             else:
                 messages.success(
                     request,
                     f"Prédiction calculée par {result.model_name}.",
                 )
+                # Step 18: confirm prediction creation.
+                notify(
+                    user=request.user,
+                    title="Prédiction créée",
+                    message="Votre prédiction a été enregistrée avec succès.",
+                    notification_type=Notification.TYPE_SUCCESS,
+                )
+                # Step 18: high-risk alert.
+                level = compute_risk_level(result.risk_probability)
+                if level["key"] == LEVEL_HIGH:
+                    notify(
+                        user=request.user,
+                        title="Risque élevé détecté",
+                        message=(
+                            "Une prédiction récente indique un risque élevé. "
+                            "Consultez le rapport pour plus de détails."
+                        ),
+                        notification_type=Notification.TYPE_DANGER,
+                    )
             return redirect("prediction:result", patient_id=patient.pk)
     else:
         form = PatientDataForm()
