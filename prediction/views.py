@@ -16,6 +16,13 @@ from .ml.inference import (
     predict_for_patient,
 )
 from .models import PatientData, PredictionResult
+from .risk import (
+    FACTORS_NOTE,
+    NO_FACTOR_MESSAGE,
+    RISK_LEVEL_NOTE,
+    compute_factors,
+    compute_risk_level,
+)
 
 
 def _fr_label(choices, value, fallback=""):
@@ -130,6 +137,8 @@ def result(request, patient_id: int):
     }
 
     risk = None
+    risk_level = None
+    factors: list[str] = []
     if prediction is not None:
         proba_pct = max(0.0, min(1.0, prediction.risk_probability)) * 100
         risk = {
@@ -142,6 +151,8 @@ def result(request, patient_id: int):
             "recommendation": prediction.recommendation,
             "created_at": prediction.created_at,
         }
+        risk_level = compute_risk_level(prediction.risk_probability)
+        factors = compute_factors(patient)
 
     return render(
         request,
@@ -150,6 +161,11 @@ def result(request, patient_id: int):
             "patient": patient,
             "prediction": prediction,
             "risk": risk,
+            "risk_level": risk_level,
+            "factors": factors,
+            "no_factor_message": NO_FACTOR_MESSAGE,
+            "risk_level_note": RISK_LEVEL_NOTE,
+            "factors_note": FACTORS_NOTE,
             "missing_model_message": MISSING_MODEL_MESSAGE,
             "fr": fr,
             "page_title": "Résultat de la prédiction",
@@ -187,6 +203,7 @@ def _row_payload(prediction: PredictionResult) -> dict:
         "risk_label": prediction.risk_label,
         "probability": prediction.risk_probability,
         "probability_pct": proba_pct,
+        "risk_level": compute_risk_level(prediction.risk_probability),
     }
 
 
@@ -271,6 +288,11 @@ def detail(request, result_id: int):
             "patient": patient,
             "prediction": prediction,
             "risk": risk,
+            "risk_level": compute_risk_level(prediction.risk_probability),
+            "factors": compute_factors(patient),
+            "no_factor_message": NO_FACTOR_MESSAGE,
+            "risk_level_note": RISK_LEVEL_NOTE,
+            "factors_note": FACTORS_NOTE,
             "fr": fr,
             "page_title": f"Prédiction #{prediction.pk}",
             "active_nav": "history",

@@ -682,7 +682,70 @@ svg { width: 1em; height: 1em; }
 .badge--teal { background: var(--color-teal-soft); color: var(--color-teal); }
 .badge--muted { background: var(--color-surface-muted); color: var(--color-text-muted); border: 1px solid var(--color-border); }
 .badge--high { background: var(--color-red-soft); color: var(--color-red); }
+.badge--moderate { background: var(--color-amber-soft); color: var(--color-amber); }
 .badge--low  { background: var(--color-teal-soft); color: var(--color-teal); }
+
+/* ---------- Risk level + factors (Step 17) ---------- */
+
+.risk-level-note {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.factors-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px 18px;
+}
+.factors-list__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.factors-list__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+.factors-empty {
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--color-teal-soft);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  border-radius: 10px;
+  color: var(--color-teal);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.factor-disclaimer {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.form-actions--start {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
 
 /* ---------- Filter chips (e.g. /historique/) ---------- */
 

@@ -21,6 +21,7 @@ from django.shortcuts import render
 
 from ai_models.models import AIModelPerformance
 from prediction.models import PredictionResult
+from prediction.risk import compute_risk_level
 
 
 # Number of rows shown in the "Prédictions récentes" card.
@@ -66,6 +67,7 @@ def _recent_prediction_payload(prediction: PredictionResult) -> dict:
         "probability": prediction.risk_probability,
         "probability_pct": proba_pct,
         "model_name": prediction.model_name,
+        "risk_level": compute_risk_level(prediction.risk_probability),
     }
 
 

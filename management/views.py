@@ -18,6 +18,7 @@ from django.shortcuts import get_object_or_404, render
 
 from ai_models.models import AIModelPerformance
 from prediction.models import PredictionResult
+from prediction.risk import compute_risk_level
 
 
 User = get_user_model()
@@ -254,6 +255,7 @@ def user_detail(request, user_id: int):
             "risk_label": p.risk_label,
             "probability_pct": max(0.0, min(1.0, p.risk_probability)) * 100,
             "model_name": p.model_name,
+            "risk_level": compute_risk_level(p.risk_probability),
         })
 
     context = {
@@ -305,6 +307,7 @@ def predictions_list(request):
             "risk_label": p.risk_label,
             "probability_pct": max(0.0, min(1.0, p.risk_probability)) * 100,
             "model_name": p.model_name,
+            "risk_level": compute_risk_level(p.risk_probability),
         }
         for p in qs
     ]
