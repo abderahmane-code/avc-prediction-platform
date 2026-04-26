@@ -25,6 +25,10 @@
       <small class="muted">Remplit le formulaire avec un cas patient à risque élevé. Vous restez libre de modifier les valeurs avant la soumission.</small>
     </div>
 
+    <div id="demo-fill-status" class="alert alert--success" role="status" aria-live="polite" hidden>
+      Exemple chargé. Vous pouvez modifier les valeurs avant la soumission.
+    </div>
+
     <form method="post" novalidate class="patient-form" autocomplete="off">
       {% csrf_token %}
 
@@ -67,32 +71,102 @@
   <script>
     (function () {
       var btn = document.getElementById("demo-fill-btn");
-      if (!btn) return;
-      // High-risk demo profile (Step 17). The button only fills the form,
-      // it never submits — the clinician stays in control.
+      var status = document.getElementById("demo-fill-status");
+      var form = document.querySelector(".patient-form");
+      if (!btn || !form) return;
+
+      // Step 17 (bug-fix): a high-risk demo profile. For each field we list
+      // *every* plausible value the option might be stored under (English /
+      // French / boolean variants), so the button works regardless of how
+      // the form choices are currently wired.
       var DEMO = {
-        gender: "Female",
-        age: "67",
-        hypertension: "1",
-        heart_disease: "1",
-        ever_married: "1",
-        work_type: "Self-employed",
-        residence_type: "Urban",
-        avg_glucose_level: "228",
-        bmi: "36.6",
-        smoking_status: "formerly smoked"
+        gender:            ["Female", "Féminin"],
+        age:               ["67"],
+        hypertension:      ["1", "True", "true", "Yes", "Oui"],
+        heart_disease:     ["1", "True", "true", "Yes", "Oui"],
+        ever_married:      ["1", "True", "true", "Yes", "Oui"],
+        work_type:         ["Self-employed", "Indépendant"],
+        residence_type:    ["Urban", "Urbain"],
+        avg_glucose_level: ["228"],
+        bmi:               ["36.6"],
+        smoking_status:    ["formerly smoked", "Ancien fumeur"]
       };
-      btn.addEventListener("click", function () {
+
+      function findField(name) {
+        // Lookup is independent of the Django widget's id format — match
+        // by `name` first (canonical), fall back to id="id_<name>".
+        var el = form.querySelector('[name="' + name + '"]');
+        if (el) return el;
+        return document.getElementById("id_" + name);
+      }
+
+      function setValue(el, candidates) {
+        if (!el) return false;
+        if (el.tagName === "SELECT") {
+          var options = Array.prototype.slice.call(el.options);
+          for (var i = 0; i < candidates.length; i++) {
+            var want = String(candidates[i]).toLowerCase();
+            var match = options.find(function (o) {
+              return o.value.toLowerCase() === want
+                || (o.textContent || "").trim().toLowerCase() === want;
+            });
+            if (match) {
+              el.value = match.value;
+              return true;
+            }
+          }
+          return false;
+        }
+        // text / number / etc. — first candidate wins.
+        el.value = candidates[0];
+        return true;
+      }
+
+      function dispatch(el) {
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
+      btn.addEventListener("click", function (event) {
+        // Belt-and-braces: prevent any accidental form submission.
+        event.preventDefault();
+
+        var filled = 0;
+        var missing = [];
         Object.keys(DEMO).forEach(function (name) {
-          var el = document.getElementById("id_" + name);
-          if (!el) return;
-          el.value = DEMO[name];
-          // Notify any listeners (validators, range previews, etc.)
-          el.dispatchEvent(new Event("change", { bubbles: true }));
-          el.dispatchEvent(new Event("input", { bubbles: true }));
+          var el = findField(name);
+          if (!el) {
+            missing.push(name);
+            return;
+          }
+          if (setValue(el, DEMO[name])) {
+            dispatch(el);
+            filled++;
+          } else {
+            missing.push(name);
+          }
         });
-        // Subtle feedback: focus the submit so the user knows the form is ready.
-        var submit = document.querySelector(".patient-form button[type='submit']");
+
+        if (status) {
+          status.hidden = false;
+          if (missing.length) {
+            status.classList.remove("alert--success");
+            status.classList.add("alert--error");
+            status.textContent =
+              "Exemple partiellement chargé (" + filled + "/10). " +
+              "Champs non détectés : " + missing.join(", ") + ".";
+          } else {
+            status.classList.remove("alert--error");
+            status.classList.add("alert--success");
+            status.textContent =
+              "Exemple chargé. Vous pouvez modifier les valeurs avant la soumission.";
+          }
+        }
+
+        // Subtle feedback: scroll status into view + focus the submit
+        // button so the clinician knows the form is ready (no auto-submit).
+        if (status) status.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        var submit = form.querySelector("button[type='submit']");
         if (submit) submit.focus();
       });
     })();
