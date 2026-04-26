@@ -1816,3 +1816,110 @@ body {
 @media (max-width: 1100px) {
   .role-badge { display: none; }
 }
+
+/* ---------- Notifications (Step 18) ---------- */
+.icon-button--active {
+  color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.08);
+}
+.icon-button__count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--color-red);
+  color: #fff;
+  border: 2px solid var(--color-surface);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  letter-spacing: 0;
+}
+
+.notif-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.notif-list__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 6px 1fr auto;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  align-items: center;
+}
+.notif-list__item--unread {
+  background: rgba(37, 99, 235, 0.04);
+  border-color: rgba(37, 99, 235, 0.18);
+}
+.notif-list__type {
+  align-self: stretch;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+.notif-list__item--success .notif-list__type { background: var(--color-teal); }
+.notif-list__item--warning .notif-list__type { background: #f59e0b; }
+.notif-list__item--danger  .notif-list__type { background: var(--color-red); }
+.notif-list__item--info    .notif-list__type { background: var(--color-primary); }
+
+.notif-list__body { min-width: 0; }
+.notif-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.notif-list__title { color: var(--color-text); font-size: 14.5px; }
+.notif-list__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.notif-list__msg {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.notif-list__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-state {
+  margin: 18px 0 0;
+  padding: 22px 18px;
+  background: var(--color-surface-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .notif-list__item {
+    grid-template-columns: 6px 1fr;
+  }
+  .notif-list__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}

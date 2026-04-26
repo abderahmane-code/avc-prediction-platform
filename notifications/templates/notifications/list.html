@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications · AVC Predict{% endblock %}
+
+{% block content %}
+  <article class="card" aria-labelledby="notif-title">
+    <header class="card__header">
+      <div>
+        <h2 id="notif-title" class="card__title">Notifications</h2>
+        <p class="card__subtitle">
+          {% if unread_count %}
+            Vous avez {{ unread_count }} notification{{ unread_count|pluralize:",s" }} non lue{{ unread_count|pluralize:",s" }}.
+          {% else %}
+            Aucune notification non lue.
+          {% endif %}
+        </p>
+      </div>
+      <div class="card__header-actions">
+        {% if unread_count %}
+          <form method="post" action="{% url 'notifications:mark_all_read' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--ghost btn--sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m20 6-11 11-5-5"/></svg>
+              Tout marquer comme lu
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </header>
+
+    {% if notifications %}
+      <ul class="notif-list">
+        {% for n in notifications %}
+          <li class="notif-list__item notif-list__item--{{ n.notification_type }} {% if not n.is_read %}notif-list__item--unread{% endif %}">
+            <span class="notif-list__type" aria-hidden="true"></span>
+            <div class="notif-list__body">
+              <div class="notif-list__header">
+                <strong class="notif-list__title">{{ n.title }}</strong>
+                <span class="notif-list__meta">
+                  {% if n.is_global %}<span class="chip chip--blue">Globale</span>{% endif %}
+                  <time datetime="{{ n.created_at|date:'c' }}">{{ n.created_at|date:'d/m/Y à H:i' }}</time>
+                </span>
+              </div>
+              <p class="notif-list__msg">{{ n.message }}</p>
+            </div>
+            <div class="notif-list__actions">
+              {% if not n.is_read %}
+                <form method="post" action="{% url 'notifications:mark_read' n.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn--ghost btn--sm">Marquer comme lu</button>
+                </form>
+              {% else %}
+                <span class="badge badge--low">Lue</span>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state">
+        <p>Aucune notification pour le moment.</p>
+      </div>
+    {% endif %}
+
+    <p class="muted" style="margin-top: 14px; font-size: 12.5px;">
+      Cette application est un projet académique et ne remplace pas un diagnostic médical.
+    </p>
+  </article>
+{% endblock %}

@@ -195,6 +195,9 @@ Le superutilisateur peut :
 | `/gestion/utilisateurs/` | **Staff/superuser** | Liste des utilisateurs + filtres |
 | `/gestion/utilisateurs/<id>/` | **Staff/superuser** | Fiche utilisateur + prédictions récentes |
 | `/gestion/predictions/` | **Staff/superuser** | Toutes les prédictions + filtres + lien PDF |
+| `/notifications/` | Authentifié | Notifications privées (utilisateur) ou privées + globales (admin) |
+| `/notifications/<id>/read/` | Authentifié | Marquer une notification comme lue (POST) |
+| `/notifications/read-all/` | Authentifié | Marquer toutes les notifications visibles comme lues (POST) |
 | `/admin/` | Staff | Administration Django |
 
 > Les routes « Owner / staff » renvoient **404** si l'utilisateur authentifié n'est ni propriétaire ni staff (pas de fuite d'existence de ligne).
@@ -247,7 +250,38 @@ Un utilisateur normal qui tente d'accéder à `/gestion/` (ou ses sous-routes) r
 python manage.py createsuperuser
 ```
 
-Suivre l'invite pour saisir nom d'utilisateur, e-mail et mot de passe. Le compte créé aura `is_staff=True` et `is_superuser=True` ; la barre latérale affichera **« Gestion plateforme »** dès la connexion.
+---
+
+## 10ter. Notifications
+
+Une cloche dans la barre supérieure ouvre la page **`/notifications/`** (login requis). Le compteur rouge sur la cloche affiche le nombre de notifications non lues visibles par l'utilisateur courant — il est mis à jour à chaque rendu de page (context processor `notifications.context_processors.notifications`).
+
+### Visibilité
+
+| Type | `user` | Visible par |
+|---|---|---|
+| **Privée** | défini | uniquement le destinataire (et les administrateurs si elle leur est adressée) |
+| **Globale / admin** | `NULL` | uniquement les comptes `is_staff` / `is_superuser` |
+
+Un utilisateur normal ne voit donc **jamais** les notifications globales destinées aux administrateurs.
+
+### Notifications créées automatiquement
+
+| Déclencheur | Type | Destinataire | Titre / message |
+|---|---|---|---|
+| Création de prédiction réussie | `success` | utilisateur | *Prédiction créée — Votre prédiction a été enregistrée avec succès.* |
+| Prédiction au niveau **Risque élevé** | `danger` | utilisateur | *Risque élevé détecté — Une prédiction récente indique un risque élevé. Consultez le rapport pour plus de détails.* |
+| Soumission alors que les artefacts IA sont absents | `warning` | utilisateur | *Modèle IA non entraîné — Le modèle IA n'est pas encore entraîné. Veuillez exécuter `python manage.py train_ai_models`.* |
+| Inscription d'un nouvel utilisateur | `info` | global (admins) | *Nouvel utilisateur inscrit — Un nouvel utilisateur vient de créer un compte.* |
+
+### Actions
+
+- **`POST /notifications/<id>/read/`** — marque une notification comme lue (uniquement si elle est visible par l'utilisateur courant ; sinon 404).
+- **`POST /notifications/read-all/`** — marque toutes les notifications visibles non lues comme lues.
+
+L'ordre d'affichage est : non lues d'abord, puis les plus récentes. Lorsqu'aucune notification n'existe, la page affiche **« Aucune notification pour le moment. »**
+
+Les notifications sont gérables depuis Django admin (`/admin/`) : `list_display`, `list_filter`, `search_fields`, et `created_at` est en lecture seule.
 
 ---
 

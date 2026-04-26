@@ -17,6 +17,9 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods
 
+from notifications.models import Notification
+from notifications.services import notify_admins
+
 from .forms import FrenchAuthenticationForm, RegisterForm
 
 
@@ -30,6 +33,12 @@ def register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Step 18: emit a global/admin notification on every signup.
+            notify_admins(
+                title="Nouvel utilisateur inscrit",
+                message="Un nouvel utilisateur vient de créer un compte.",
+                notification_type=Notification.TYPE_INFO,
+            )
             auth_login(request, user)
             messages.success(
                 request,
