@@ -285,6 +285,26 @@ Les notifications sont gérables depuis Django admin (`/admin/`) : `list_display
 
 ---
 
+## 10quater. Recherche et filtres dans l'historique
+
+La page `/historique/` (Step 19) propose un panneau de filtres avancés au-dessus du tableau. Tous les filtres sont combinables et sont passés en `GET` (URL partageable).
+
+| Filtre | Type | Valeurs |
+|---|---|---|
+| **Niveau de risque** | `risk` | `all` (défaut) · `low` (0–30 %) · `medium` (31–60 %) · `high` (61–100 %) |
+| **Modèle IA** | `model` | `all` ou nom exact (liste dynamique des `model_name` visibles) |
+| **Date début** | `date_from` | `YYYY-MM-DD` (inclusif, début de journée) |
+| **Date fin** | `date_to` | `YYYY-MM-DD` (inclusif, fin de journée) |
+| **Probabilité min** | `proba_min` | pourcentage 0–100 (la décimale `,` est acceptée) |
+| **Probabilité max** | `proba_max` | pourcentage 0–100 |
+| **Recherche libre** | `q` | matche `model_name`, `risk_label`, `gender` (icontains) ou âge exact si numérique |
+
+Boutons **« Appliquer les filtres »** et **« Réinitialiser »** (visible uniquement si au moins un filtre est actif). État vide explicite *« Aucune prédiction ne correspond aux filtres sélectionnés. »* lorsque les filtres ne renvoient aucune ligne, distinct du *« Aucune prédiction enregistrée pour le moment. »* affiché si la base est vide.
+
+Le cloisonnement par utilisateur reste appliqué : un utilisateur normal ne filtre que ses propres prédictions, le staff/superuser voit toutes les lignes. Aucune migration ni changement de schéma — les filtres `risk` mappent les seuils 30 % / 60 % / 100 % directement sur le champ `risk_probability`.
+
+---
+
 ## 11. Avertissement médical
 
 > **Cette application est un projet académique et ne remplace pas un diagnostic médical.**
