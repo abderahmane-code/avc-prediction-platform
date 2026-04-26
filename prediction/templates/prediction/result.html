@@ -5,7 +5,7 @@
 
 {% block content %}
   {% if risk %}
-    <article class="card {% if risk.is_high %}card--risk-high{% else %}card--risk-low{% endif %}" aria-labelledby="result-title">
+    <article class="card card--risk-{{ risk_level.css }}" aria-labelledby="result-title">
       <header class="card__header">
         <div>
           <h2 id="result-title" class="card__title">Résultat de la prédiction</h2>
@@ -14,11 +14,7 @@
             le {{ risk.created_at|date:"d/m/Y à H:i" }}.
           </p>
         </div>
-        {% if risk.is_high %}
-          <span class="chip chip--high">Risque élevé</span>
-        {% else %}
-          <span class="chip chip--low">Risque faible</span>
-        {% endif %}
+        <span class="chip chip--{{ risk_level.css }}">{{ risk_level.label }}</span>
       </header>
 
       <div class="risk-result">
@@ -31,33 +27,60 @@
                     pathLength="100" />
           </svg>
           <div class="risk-gauge__text">
-            <div class="risk-gauge__percent">{{ risk.probability|floatformat:2 }}</div>
+            <div class="risk-gauge__percent">{{ risk.probability_pct|floatformat:0 }} %</div>
             <div class="risk-gauge__label">Probabilité</div>
           </div>
         </div>
 
         <div class="risk-summary">
           <div class="risk-summary__line">
-            <span class="risk-summary__label">Risque d'AVC</span>
-            <span class="risk-summary__value risk-summary__value--{% if risk.is_high %}high{% else %}low{% endif %}">
-              {% if risk.is_high %}Élevé{% else %}Faible{% endif %}
+            <span class="risk-summary__label">Niveau de risque</span>
+            <span class="risk-summary__value risk-summary__value--{{ risk_level.css }}">
+              {{ risk_level.short }}
             </span>
-          </div>
-          <div class="risk-summary__line">
-            <span class="risk-summary__label">Modèle utilisé</span>
-            <span class="risk-summary__value">{{ risk.model_name }}</span>
           </div>
           <div class="risk-summary__line">
             <span class="risk-summary__label">Probabilité estimée</span>
             <span class="risk-summary__value">{{ risk.probability_pct|floatformat:1 }} %</span>
           </div>
+          <div class="risk-summary__line">
+            <span class="risk-summary__label">Modèle utilisé</span>
+            <span class="risk-summary__value">{{ risk.model_name }}</span>
+          </div>
         </div>
       </div>
 
-      <div class="recommendation {% if risk.is_high %}recommendation--high{% endif %}">
+      <p class="risk-level-note">{{ risk_level_note }}</p>
+
+      <div class="recommendation {% if risk_level.key == 'high' %}recommendation--high{% endif %}">
         <div class="recommendation__title">Recommandation clinique</div>
         <p class="recommendation__text">{{ risk.recommendation }}</p>
       </div>
+    </article>
+
+    <article class="card" aria-labelledby="factors-title">
+      <header class="card__header">
+        <div>
+          <h2 id="factors-title" class="card__title">Facteurs influençant la prédiction</h2>
+          <p class="card__subtitle">Éléments présents dans le dossier patient et associés à un risque accru d'AVC.</p>
+        </div>
+        <span class="chip chip--blue">{{ factors|length }} facteur{{ factors|length|pluralize:",s" }}</span>
+      </header>
+
+      {% if factors %}
+        <ul class="factors-list">
+          {% for factor in factors %}
+            <li class="factors-list__item">
+              <span class="factors-list__dot" aria-hidden="true"></span>
+              <span>{{ factor }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="factors-empty">{{ no_factor_message }}</p>
+      {% endif %}
+
+      <p class="factor-disclaimer">{{ factors_note }}</p>
     </article>
   {% else %}
     <article class="card" aria-labelledby="result-title">

@@ -72,11 +72,7 @@
               <td>{{ r.bmi|floatformat:1 }}</td>
               <td>{{ r.model_name }}</td>
               <td>
-                {% if r.is_high %}
-                  <span class="badge badge--high">Risque élevé</span>
-                {% else %}
-                  <span class="badge badge--low">Risque faible</span>
-                {% endif %}
+                <span class="badge badge--{{ r.risk_level.css }}">{{ r.risk_level.label }}</span>
               </td>
               <td>{{ r.probability_pct|floatformat:1 }} %</td>
               <td class="models-table__action">

@@ -17,6 +17,14 @@
       <span class="chip chip--blue">Saisie clinicien</span>
     </header>
 
+    <div class="form-actions form-actions--start">
+      <button type="button" id="demo-fill-btn" class="btn btn--ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Remplir avec un exemple
+      </button>
+      <small class="muted">Remplit le formulaire avec un cas patient à risque élevé. Vous restez libre de modifier les valeurs avant la soumission.</small>
+    </div>
+
     <form method="post" novalidate class="patient-form" autocomplete="off">
       {% csrf_token %}
 
@@ -55,4 +63,38 @@
       </div>
     </form>
   </article>
+
+  <script>
+    (function () {
+      var btn = document.getElementById("demo-fill-btn");
+      if (!btn) return;
+      // High-risk demo profile (Step 17). The button only fills the form,
+      // it never submits — the clinician stays in control.
+      var DEMO = {
+        gender: "Female",
+        age: "67",
+        hypertension: "1",
+        heart_disease: "1",
+        ever_married: "1",
+        work_type: "Self-employed",
+        residence_type: "Urban",
+        avg_glucose_level: "228",
+        bmi: "36.6",
+        smoking_status: "formerly smoked"
+      };
+      btn.addEventListener("click", function () {
+        Object.keys(DEMO).forEach(function (name) {
+          var el = document.getElementById("id_" + name);
+          if (!el) return;
+          el.value = DEMO[name];
+          // Notify any listeners (validators, range previews, etc.)
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+        // Subtle feedback: focus the submit so the user knows the form is ready.
+        var submit = document.querySelector(".patient-form button[type='submit']");
+        if (submit) submit.focus();
+      });
+    })();
+  </script>
 {% endblock %}
