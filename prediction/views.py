@@ -211,10 +211,23 @@ def result(request, patient_id: int):
 # --------------------------------------------------------------------------- #
 
 # Querystring values accepted by /historique/?risk=...
+# Step 19: extended with the 3-level interpretation (low/medium/high).
 RISK_FILTER_ALL = "all"
 RISK_FILTER_HIGH = "high"
+RISK_FILTER_MEDIUM = "medium"
 RISK_FILTER_LOW = "low"
-RISK_FILTER_VALUES = (RISK_FILTER_ALL, RISK_FILTER_HIGH, RISK_FILTER_LOW)
+RISK_FILTER_VALUES = (
+    RISK_FILTER_ALL,
+    RISK_FILTER_HIGH,
+    RISK_FILTER_MEDIUM,
+    RISK_FILTER_LOW,
+)
+RISK_FILTER_BOUNDS = {
+    # Probability ranges per risk level (matches prediction.risk thresholds).
+    RISK_FILTER_LOW: (0.0, 0.30),
+    RISK_FILTER_MEDIUM: (0.3001, 0.60),
+    RISK_FILTER_HIGH: (0.6001, 1.0),
+}
 
 
 def _row_payload(prediction: PredictionResult) -> dict:
@@ -239,31 +252,120 @@ def _row_payload(prediction: PredictionResult) -> dict:
     }
 
 
+def _parse_date(value: str):
+    """Parse a YYYY-MM-DD date string. Returns ``None`` on any failure."""
+    from datetime import datetime
+
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _parse_float(value: str):
+    """Parse a float (accepts ``,`` or ``.`` as decimal separator)."""
+    if value is None or value == "":
+        return None
+    try:
+        return float(str(value).replace(",", "."))
+    except (TypeError, ValueError):
+        return None
+
+
 @login_required
 def history(request):
-    """Render the prediction history at ``/historique/``.
+    """Render the prediction history at ``/historique/`` (Step 19 filters).
 
     Scoped to ``request.user`` so each clinician only sees their own
-    predictions (staff/superusers see every row). Supports a
-    ``?risk=high|low|all`` filter (defaults to ``all``). The page shows a
-    clean French empty state when no :class:`PredictionResult` rows are
-    visible to the user.
+    predictions (staff/superusers see every row). Supports filters via
+    querystring:
+
+    - ``risk``       — ``all`` / ``low`` / ``medium`` / ``high``
+    - ``model``      — exact ``model_name`` match (or ``all``)
+    - ``date_from`` / ``date_to`` — ``YYYY-MM-DD`` (inclusive)
+    - ``proba_min`` / ``proba_max`` — percentages 0-100 (inclusive)
+    - ``q``          — free text matched against model_name, risk_label,
+                       gender label and exact age
     """
+    from datetime import datetime, time
+
+    from django.db.models import Q
+    from django.utils import timezone
+
     risk_filter = request.GET.get("risk", RISK_FILTER_ALL)
     if risk_filter not in RISK_FILTER_VALUES:
         risk_filter = RISK_FILTER_ALL
 
+    model_filter = (request.GET.get("model") or RISK_FILTER_ALL).strip()
+    date_from = _parse_date(request.GET.get("date_from", ""))
+    date_to = _parse_date(request.GET.get("date_to", ""))
+    proba_min_pct = _parse_float(request.GET.get("proba_min", ""))
+    proba_max_pct = _parse_float(request.GET.get("proba_max", ""))
+    q = (request.GET.get("q") or "").strip()
+
+    # Owner scoping (staff/superuser sees everything).
     base_qs = PredictionResult.objects.select_related("patient_data")
     if not (request.user.is_staff or request.user.is_superuser):
         base_qs = base_qs.filter(user=request.user)
-    qs = base_qs.order_by("-created_at")
-    if risk_filter == RISK_FILTER_HIGH:
-        qs = qs.filter(prediction=True)
-    elif risk_filter == RISK_FILTER_LOW:
-        qs = qs.filter(prediction=False)
 
+    qs = base_qs
+
+    # Risk level → probability range (no schema change required).
+    if risk_filter in RISK_FILTER_BOUNDS:
+        lo, hi = RISK_FILTER_BOUNDS[risk_filter]
+        qs = qs.filter(risk_probability__gte=lo, risk_probability__lte=hi)
+
+    # AI model exact match.
+    if model_filter and model_filter != RISK_FILTER_ALL:
+        qs = qs.filter(model_name=model_filter)
+
+    # Date range (inclusive). Use end-of-day so date_to includes that day.
+    if date_from:
+        qs = qs.filter(
+            created_at__gte=timezone.make_aware(datetime.combine(date_from, time.min))
+        )
+    if date_to:
+        qs = qs.filter(
+            created_at__lte=timezone.make_aware(datetime.combine(date_to, time.max))
+        )
+
+    # Probability range — UI is in percent (0-100).
+    if proba_min_pct is not None:
+        qs = qs.filter(risk_probability__gte=max(0.0, proba_min_pct) / 100.0)
+    if proba_max_pct is not None:
+        qs = qs.filter(risk_probability__lte=min(100.0, proba_max_pct) / 100.0)
+
+    # Free-text search: model_name / risk_label / gender / numeric age.
+    if q:
+        text_q = Q(model_name__icontains=q) | Q(risk_label__icontains=q) | Q(
+            patient_data__gender__icontains=q
+        )
+        try:
+            text_q |= Q(patient_data__age=float(q.replace(",", ".")))
+        except ValueError:
+            pass
+        qs = qs.filter(text_q)
+
+    qs = qs.order_by("-created_at")
     rows = [_row_payload(p) for p in qs]
     total_all = base_qs.count()
+
+    # Distinct model_name values visible to the user (drives the dropdown).
+    available_models = sorted(
+        {m for m in base_qs.values_list("model_name", flat=True) if m}
+    )
+
+    has_active_filters = bool(
+        (risk_filter and risk_filter != RISK_FILTER_ALL)
+        or (model_filter and model_filter != RISK_FILTER_ALL)
+        or date_from
+        or date_to
+        or proba_min_pct is not None
+        or proba_max_pct is not None
+        or q
+    )
 
     return render(
         request,
@@ -271,6 +373,14 @@ def history(request):
         {
             "rows": rows,
             "risk_filter": risk_filter,
+            "model_filter": model_filter or RISK_FILTER_ALL,
+            "available_models": available_models,
+            "date_from_value": request.GET.get("date_from", "") or "",
+            "date_to_value": request.GET.get("date_to", "") or "",
+            "proba_min_value": request.GET.get("proba_min", "") or "",
+            "proba_max_value": request.GET.get("proba_max", "") or "",
+            "q_value": q,
+            "has_active_filters": has_active_filters,
             "total_all": total_all,
             "total_filtered": len(rows),
             "page_title": "Historique des prédictions",
