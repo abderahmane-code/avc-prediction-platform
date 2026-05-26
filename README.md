@@ -411,3 +411,11 @@ Hors périmètre du projet académique, mais envisageable pour une suite :
 ## Licence
 
 Projet académique — usage pédagogique uniquement.
+----
+## frontend
+cd frontend
+npm run dev
+
+## backend 
+cd backend
+.\.venv\Scripts\python.exe manage.py runserver

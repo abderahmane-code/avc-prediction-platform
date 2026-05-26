@@ -66,10 +66,12 @@ class PredictionResult(models.Model):
     RISK_LOW = "low"
     RISK_MODERATE = "moderate"
     RISK_HIGH = "high"
+    RISK_CRITICAL = "critical"
     RISK_LABEL_CHOICES = [
         (RISK_LOW, "Low"),
         (RISK_MODERATE, "Moderate"),
         (RISK_HIGH, "High"),
+        (RISK_CRITICAL, "Critical"),
     ]
 
     user = models.ForeignKey(
@@ -89,6 +91,11 @@ class PredictionResult(models.Model):
     risk_label = models.CharField(max_length=20, choices=RISK_LABEL_CHOICES)
     risk_probability = models.FloatField(help_text="Probability in [0, 1].")
     recommendation = models.TextField(blank=True)
+    shap_explanation = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="SHAP feature importance scores.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

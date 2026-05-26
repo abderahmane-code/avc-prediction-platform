@@ -35,9 +35,23 @@ interface PredictionResult {
     short: string;
   };
   factors: string[];
+  shap_explanation: { [key: string]: number } | null;
   risk_level_note: string;
   factors_note: string;
 }
+
+const FEATURE_LABELS_FR: { [key: string]: string } = {
+  age: "Âge avancé",
+  avg_glucose_level: "Glycémie élevée",
+  bmi: "Indice de Masse Corporelle (IMC)",
+  gender: "Genre (Homme/Femme)",
+  ever_married: "Statut matrimonial",
+  work_type: "Activité professionnelle",
+  residence_type: "Zone de résidence",
+  smoking_status: "Tabagisme",
+  hypertension: "Hypertension artérielle",
+  heart_disease: "Maladie cardiaque",
+};
 
 export default function PredictionDetailPage() {
   const { id } = useParams();
@@ -84,6 +98,46 @@ export default function PredictionDetailPage() {
 
   if (!result) return null;
 
+  // Process SHAP values for Explainable AI
+  const shapData = result.shap_explanation;
+  const sortedFeatures = shapData
+    ? Object.entries(shapData)
+        .map(([key, val]) => ({
+          key,
+          label: FEATURE_LABELS_FR[key] || key,
+          value: val as number,
+          pct: (val as number) * 100,
+        }))
+        .filter((item) => Math.abs(item.pct) >= 0.1) // Only show features with visible impact
+        .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct)) // Sort by absolute impact
+    : [];
+
+  // Determine colors based on risk levels
+  const isCritical = result.risk_level.css === "critical";
+  const isHigh = result.risk_level.css === "high" || isCritical;
+  
+  const gaugeColor = 
+    isCritical ? "#7f1d1d" :
+    result.risk_level.css === "high" ? "#c94c4c" :
+    result.risk_level.css === "moderate" ? "#c58a2a" :
+    "#009b4e";
+
+  const cardStyle = isCritical 
+    ? { borderColor: "rgba(127, 29, 29, 0.4)", boxShadow: "0 0 0 3px rgba(127, 29, 29, 0.08)" } 
+    : {};
+
+  const chipStyle = isCritical 
+    ? { background: "#fef2f2", color: "#7f1d1d", borderColor: "rgba(127, 29, 29, 0.3)", fontWeight: 700 } 
+    : {};
+
+  const valueStyle = isCritical 
+    ? { color: "#7f1d1d", fontWeight: 800 } 
+    : {};
+
+  const recommendationStyle = isCritical 
+    ? { background: "linear-gradient(180deg, rgba(127, 29, 29, 0.06), rgba(127, 29, 29, 0.02))", borderColor: "rgba(127, 29, 29, 0.25)", borderLeft: "4px solid #7f1d1d" } 
+    : {};
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
       {/* Back button */}
@@ -97,7 +151,7 @@ export default function PredictionDetailPage() {
       </button>
 
       {/* 1. Main Risk Card */}
-      <article className={`card card--risk-${result.risk_level.css}`} aria-labelledby="result-title">
+      <article className={`card card--risk-${result.risk_level.css}`} style={cardStyle} aria-labelledby="result-title">
         <header className="card__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
           <div>
             <h2 id="result-title" className="card__title">Diagnostic IA #{result.id}</h2>
@@ -105,7 +159,7 @@ export default function PredictionDetailPage() {
               Calculé par le modèle <strong>{result.model_name}</strong> le {new Date(result.created_at).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}.
             </p>
           </div>
-          <span className={`chip chip--${result.risk_level.css}`}>{result.risk_level.label}</span>
+          <span className={`chip chip--${result.risk_level.css}`} style={chipStyle}>{result.risk_level.label}</span>
         </header>
 
         <div className="risk-result">
@@ -117,12 +171,15 @@ export default function PredictionDetailPage() {
                 cy="60"
                 r="52"
                 className="risk-gauge__value"
-                style={{ strokeDasharray: `${result.probability_pct_int} 1000` }}
+                style={{ 
+                  strokeDasharray: `${result.probability_pct_int} 1000`,
+                  stroke: gaugeColor
+                }}
                 pathLength={100}
               />
             </svg>
             <div className="risk-gauge__text">
-              <div className="risk-gauge__percent">{Math.round(result.probability_pct)} %</div>
+              <div className="risk-gauge__percent" style={valueStyle}>{Math.round(result.probability_pct)} %</div>
               <div className="risk-gauge__label">Probabilité</div>
             </div>
           </div>
@@ -130,13 +187,13 @@ export default function PredictionDetailPage() {
           <div className="risk-summary">
             <div className="risk-summary__line">
               <span className="risk-summary__label">Niveau de risque</span>
-              <span className={`risk-summary__value risk-summary__value--${result.risk_level.css}`}>
+              <span className={`risk-summary__value risk-summary__value--${result.risk_level.css}`} style={valueStyle}>
                 {result.risk_level.short}
               </span>
             </div>
             <div className="risk-summary__line">
               <span className="risk-summary__label">Probabilité estimée</span>
-              <span className="risk-summary__value">{result.probability_pct.toFixed(1).replace(".", ",")} %</span>
+              <span className="risk-summary__value" style={isCritical ? { fontWeight: 700 } : {}}>{result.probability_pct.toFixed(1).replace(".", ",")} %</span>
             </div>
             <div className="risk-summary__line">
               <span className="risk-summary__label">Modèle utilisé</span>
@@ -149,36 +206,83 @@ export default function PredictionDetailPage() {
           {result.risk_level_note}
         </p>
 
-        <div className={`recommendation ${result.risk_level.key === "high" ? "recommendation--high" : ""}`} style={{ marginTop: "24px" }}>
-          <div className="recommendation__title">Recommandation clinique</div>
+        <div className={`recommendation ${isHigh ? "recommendation--high" : ""}`} style={{ marginTop: "24px", ...recommendationStyle }}>
+          <div className="recommendation__title" style={isCritical ? { color: "#7f1d1d" } : {}}>Recommandation clinique</div>
           <p className="recommendation__text">{result.recommendation}</p>
         </div>
       </article>
 
-      {/* 2. Risk Factors */}
+      {/* 2. Explainable AI & Risk Factors */}
       <article className="card" aria-labelledby="factors-title">
         <header className="card__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
           <div>
-            <h2 id="factors-title" className="card__title">Facteurs influençant la prédiction</h2>
-            <p className="card__subtitle">Éléments présents dans le dossier patient et associés à un risque accru d&apos;AVC.</p>
+            <h2 id="factors-title" className="card__title">Explication médicale (IA explicable - SHAP)</h2>
+            <p className="card__subtitle">Contribution et impact clinique de chaque facteur sur l&apos;estimation du risque.</p>
           </div>
-          <span className="chip chip--blue">{result.factors.length} facteur{result.factors.length > 1 ? "s" : ""}</span>
+          <span className="chip chip--blue">{sortedFeatures.length > 0 ? "Valeurs SHAP" : `${result.factors.length} facteur(s)`}</span>
         </header>
 
-        {result.factors.length > 0 ? (
-          <ul className="factors-list" style={{ display: "flex", flexDirection: "column", gap: "12px", listStyle: "none", padding: 0 }}>
-            {result.factors.map((factor, i) => (
-              <li key={i} className="factors-list__item" style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px" }}>
-                <span className="factors-list__dot" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#c94c4c", flexShrink: 0 }}></span>
-                <span>{factor}</span>
-              </li>
-            ))}
-          </ul>
+        {sortedFeatures.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <p style={{ fontSize: "13.5px", color: "#64748b", margin: 0 }}>
+              Les valeurs positives indiquent un facteur aggravant le risque (en rouge), tandis que les valeurs négatives réduisent le risque (en sarcelle).
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "8px" }}>
+              {sortedFeatures.map((item) => {
+                const isPositive = item.pct >= 0;
+                const formattedPct = `${isPositive ? "+" : ""}${item.pct.toFixed(1).replace(".", ",")} %`;
+                const maxPct = Math.max(...sortedFeatures.map(f => Math.abs(f.pct)));
+                const relativeWidth = maxPct > 0 ? `${(Math.abs(item.pct) / maxPct) * 100}%` : "0%";
+
+                return (
+                  <div key={item.key} style={{ display: "grid", gridTemplateColumns: "220px 1fr 70px", alignItems: "center", gap: "16px" }}>
+                    <span style={{ fontSize: "13.5px", fontWeight: 600, color: "#1e293b" }}>{item.label}</span>
+                    <div style={{ background: "#f1f5f9", height: "10px", borderRadius: "5px", position: "relative", overflow: "hidden" }}>
+                      <div
+                        style={{
+                          position: "absolute",
+                          height: "100%",
+                          width: relativeWidth,
+                          left: isPositive ? "0" : "auto",
+                          right: isPositive ? "auto" : "0",
+                          background: isPositive ? "#ef4444" : "#0d9488",
+                          borderRadius: "5px",
+                        }}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "13.5px",
+                        fontWeight: 700,
+                        textAlign: "right",
+                        color: isPositive ? "#ef4444" : "#0d9488",
+                      }}
+                    >
+                      {formattedPct}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         ) : (
-          <p className="factors-empty" style={{ color: "#009b4e", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
-            <CheckCircle style={{ width: 18, height: 18 }} />
-            <span>Aucun facteur clinique de risque élevé identifié.</span>
-          </p>
+          <div>
+            {result.factors.length > 0 ? (
+              <ul className="factors-list" style={{ display: "flex", flexDirection: "column", gap: "12px", listStyle: "none", padding: 0 }}>
+                {result.factors.map((factor, i) => (
+                  <li key={i} className="factors-list__item" style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px" }}>
+                    <span className="factors-list__dot" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#c94c4c", flexShrink: 0 }}></span>
+                    <span>{factor}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="factors-empty" style={{ color: "#009b4e", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                <CheckCircle style={{ width: 18, height: 18 }} />
+                <span>Aucun facteur clinique de risque élevé identifié.</span>
+              </p>
+            )}
+          </div>
         )}
 
         <p className="factor-disclaimer" style={{ marginTop: "16px", color: "#8a8a8a", fontSize: "12.5px" }}>
@@ -210,7 +314,7 @@ export default function PredictionDetailPage() {
 
         <div className="form-actions" style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "24px" }}>
           <a
-            href={`/prediction/detail/${result.id}/pdf`}
+            href={`/api/prediction/detail/${result.id}/pdf`}
             className="btn btn--primary"
             target="_blank"
             rel="noopener noreferrer"

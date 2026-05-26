@@ -166,10 +166,15 @@ def _patient_table(patient_rows: list[tuple[str, str]]) -> Table:
     return table
 
 
+COLOR_CRITICAL = colors.HexColor("#7f1d1d")
+COLOR_CRITICAL_SOFT = colors.HexColor("#fef2f2")
+
 _LEVEL_ACCENT = {
     "low": (COLOR_TEAL, COLOR_TEAL_SOFT),
     "medium": (COLOR_AMBER, COLOR_AMBER_SOFT_RISK),
+    "moderate": (COLOR_AMBER, COLOR_AMBER_SOFT_RISK),
     "high": (COLOR_RED, COLOR_RED_SOFT),
+    "critical": (COLOR_CRITICAL, COLOR_CRITICAL_SOFT),
 }
 
 

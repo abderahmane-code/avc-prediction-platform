@@ -38,27 +38,93 @@ export default function ConsoleLayout({
   const router = useRouter();
   const pathname = usePathname();
 
+  const playClinicalAlert = () => {
+    if (typeof window === "undefined") return;
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      
+      const playBeep = (delay: number, duration: number, freq: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+        
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + duration);
+      };
+
+      // Diagnostic warning sound: beep, beep, beep!
+      playBeep(0.0, 0.15, 880);
+      playBeep(0.2, 0.15, 880);
+      playBeep(0.4, 0.30, 880);
+    } catch (err) {
+      console.error("Audio Alert Failed", err);
+    }
+  };
+
   useEffect(() => {
+    let active = true;
+
     async function checkSession() {
       try {
         const data = await fetchApi("/api/auth/session/");
+        if (!active) return;
         if (data.authenticated) {
           setUser(data.user);
-          // Fetch notifications count
           const notifData = await fetchApi("/api/notifications/");
           setUnreadCount(notifData.unread_count || 0);
         } else {
           router.push(`/login?next=${encodeURIComponent(pathname)}`);
         }
-      } catch (err) {
-        console.error("Session check failed", err);
+      } catch {
         router.push("/login");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
     checkSession();
-  }, [router, pathname]);
+
+    // Start 10-second polling for real-time notifications
+    const interval = setInterval(async () => {
+      if (!active) return;
+      try {
+        const data = await fetchApi("/api/auth/session/");
+        if (data.authenticated) {
+          const notifData = await fetchApi("/api/notifications/");
+          const newCount = notifData.unread_count || 0;
+          
+          if (newCount > unreadCount) {
+            setUnreadCount(newCount);
+            // Check if any of the unread notifications is 'danger' (Critical alert)
+            const dangerNotifs = notifData.notifications?.filter(
+              (n: any) => !n.is_read && n.type === "danger"
+            ) || [];
+            
+            if (dangerNotifs.length > 0) {
+              playClinicalAlert();
+            }
+          } else if (newCount !== unreadCount) {
+            setUnreadCount(newCount);
+          }
+        }
+      } catch {
+        // Silent catch for network hiccups
+      }
+    }, 10000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [router, pathname, unreadCount]);
 
   const handleLogout = async () => {
     try {

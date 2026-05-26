@@ -174,19 +174,42 @@ def evaluate(model, X_test, y_test) -> Tuple[Dict[str, float], np.ndarray]:
         except Exception:
             proba = None
 
+    from sklearn.metrics import confusion_matrix, roc_curve
+
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+
     metrics = {
         "accuracy": float(accuracy_score(y_test, y_pred)),
         "precision": float(precision_score(y_test, y_pred, zero_division=0)),
         "recall": float(recall_score(y_test, y_pred, zero_division=0)),
         "f1_score": float(f1_score(y_test, y_pred, zero_division=0)),
         "roc_auc": None,
+        "confusion_matrix": {
+            "tn": int(tn),
+            "fp": int(fp),
+            "fn": int(fn),
+            "tp": int(tp),
+        },
+        "roc_curve": {
+            "fpr": [],
+            "tpr": [],
+            "thresholds": [],
+        }
     }
 
     if proba is not None and len(np.unique(y_test)) > 1:
         try:
             metrics["roc_auc"] = float(roc_auc_score(y_test, proba))
-        except ValueError:
-            metrics["roc_auc"] = None
+            fpr, tpr, thresholds = roc_curve(y_test, proba)
+            # Standardize length to keep json size reasonable
+            step = max(1, len(fpr) // 50)
+            metrics["roc_curve"] = {
+                "fpr": [float(x) for x in fpr[::step]],
+                "tpr": [float(x) for x in tpr[::step]],
+                "thresholds": [float(x) for x in thresholds[::step]],
+            }
+        except Exception:
+            pass
     return metrics, y_pred
 
 
@@ -281,6 +304,17 @@ def train_and_persist(
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
     joblib.dump(preprocessor, PREPROCESSOR_PATH)
     joblib.dump(best_model, BEST_MODEL_PATH)
+
+    log("      Training SHAP explainer on 100 sample points...")
+    try:
+        import shap
+        background_sample = shap.sample(X_train_t, 100)
+        explainer = shap.Explainer(best_model.predict_proba, background_sample)
+        SHAP_EXPLAINER_PATH = ARTIFACTS_DIR / "shap_explainer.pkl"
+        joblib.dump(explainer, SHAP_EXPLAINER_PATH)
+        log(f"      shap_explainer -> {SHAP_EXPLAINER_PATH}")
+    except Exception as e:
+        log(f"      WARNING: Failed to train SHAP explainer: {e}")
 
     payload = {
         "best_model": best_name,

@@ -91,6 +91,7 @@ def _prediction_payload(pred):
         "recommendation": pred.recommendation,
         "risk_level": compute_risk_level(pred.risk_probability),
         "factors": compute_factors(patient),
+        "shap_explanation": pred.shap_explanation,
         "username": pred.user.get_username() if pred.user else "—",
     }
 
@@ -261,6 +262,7 @@ def new_prediction(request):
             risk_label=out.risk_label,
             risk_probability=out.risk_probability,
             recommendation=out.recommendation,
+            shap_explanation=out.shap_explanation,
         )
 
         # Notify
@@ -271,11 +273,11 @@ def new_prediction(request):
             notification_type=Notification.TYPE_SUCCESS,
         )
         level = compute_risk_level(result.risk_probability)
-        if level["key"] == LEVEL_HIGH:
+        if level["key"] in ("high", "critical"):
             notify(
                 user=request.user,
-                title="Risque élevé détecté",
-                message="Une prédiction récente indique un risque élevé. Consultez le rapport.",
+                title="Risque critique ou élevé détecté",
+                message=f"Une prédiction récente indique un {level['label'].lower()}. Consultez le rapport.",
                 notification_type=Notification.TYPE_DANGER,
             )
 
@@ -406,6 +408,24 @@ def models_comparison(request):
     perfs = list(AIModelPerformance.objects.all().order_by("-is_best_model", "-f1_score", "model_name"))
     rows = [_model_payload(p) for p in perfs]
     has_models = bool(rows)
+
+    from prediction.ml.train_models import METRICS_PATH
+    advanced_metrics = {}
+    if METRICS_PATH.exists():
+        try:
+            payload = json.loads(METRICS_PATH.read_text())
+            advanced_metrics = payload.get("models", {})
+        except Exception:
+            pass
+
+    for r in rows:
+        name = r["name"]
+        if name in advanced_metrics:
+            r["confusion_matrix"] = advanced_metrics[name].get("confusion_matrix")
+            r["roc_curve"] = advanced_metrics[name].get("roc_curve")
+        else:
+            r["confusion_matrix"] = None
+            r["roc_curve"] = None
 
     best = next((r for r in rows if r["is_best"]), None)
     avg_precision = AIModelPerformance.objects.aggregate(v=Avg("precision"))["v"]

@@ -29,6 +29,7 @@ interface Prediction {
     label: string;
     description: string;
     accent: string;
+    css: string;
   };
 }
 
@@ -155,7 +156,10 @@ export default function DashboardPage() {
                         <td style={{ padding: "14px 8px" }}>{pred.age} ans</td>
                         <td style={{ padding: "14px 8px", color: "#6b6b6b" }}>{pred.model_name}</td>
                         <td style={{ padding: "14px 8px" }}>
-                          <span style={{ fontWeight: 600, color: pred.is_high ? "#c94c4c" : "#009b4e" }}>
+                          <span style={{ 
+                            fontWeight: 700, 
+                            color: pred.risk_level.css === "critical" ? "#7f1d1d" : pred.is_high ? "#c94c4c" : "#009b4e" 
+                          }}>
                             {pred.probability_pct_int}%
                           </span>
                         </td>
@@ -167,8 +171,19 @@ export default function DashboardPage() {
                               borderRadius: "4px",
                               fontSize: "12px",
                               fontWeight: 600,
-                              background: pred.risk_level.accent === "red" ? "#f8eaea" : pred.risk_level.accent === "amber" ? "#fff4df" : "#eaf7f0",
-                              color: pred.risk_level.accent === "red" ? "#c94c4c" : pred.risk_level.accent === "amber" ? "#c58a2a" : "#009b4e",
+                              background: 
+                                pred.risk_level.css === "critical" ? "#fef2f2" : 
+                                pred.risk_level.accent === "red" ? "#f8eaea" : 
+                                pred.risk_level.accent === "amber" ? "#fff4df" : 
+                                "#eaf7f0",
+                              color: 
+                                pred.risk_level.css === "critical" ? "#7f1d1d" : 
+                                pred.risk_level.accent === "red" ? "#c94c4c" : 
+                                pred.risk_level.accent === "amber" ? "#c58a2a" : 
+                                "#009b4e",
+                              border: 
+                                pred.risk_level.css === "critical" ? "1px solid rgba(127, 29, 29, 0.2)" : 
+                                "none",
                             }}
                           >
                             {pred.risk_level.label}

@@ -21,19 +21,22 @@ from __future__ import annotations
 LEVEL_LOW = "low"
 LEVEL_MEDIUM = "medium"
 LEVEL_HIGH = "high"
+LEVEL_CRITICAL = "critical"
 
 # Long French label (used in the prominent "Risque ___" line).
 LEVEL_LABELS = {
     LEVEL_LOW: "Risque faible",
-    LEVEL_MEDIUM: "Risque moyen",
+    LEVEL_MEDIUM: "Risque modéré",
     LEVEL_HIGH: "Risque élevé",
+    LEVEL_CRITICAL: "Risque critique",
 }
 
 # Short French label (used in compact badges/chips and the PDF).
 LEVEL_SHORT = {
     LEVEL_LOW: "Faible",
-    LEVEL_MEDIUM: "Moyen",
+    LEVEL_MEDIUM: "Modéré",
     LEVEL_HIGH: "Élevé",
+    LEVEL_CRITICAL: "Critique",
 }
 
 # Maps every level to the existing CSS modifier suffix on .badge--/.chip--/
@@ -43,6 +46,21 @@ LEVEL_CSS = {
     LEVEL_LOW: "low",
     LEVEL_MEDIUM: "moderate",
     LEVEL_HIGH: "high",
+    LEVEL_CRITICAL: "critical",
+}
+
+LEVEL_ACCENT = {
+    LEVEL_LOW: "teal",
+    LEVEL_MEDIUM: "amber",
+    LEVEL_HIGH: "red",
+    LEVEL_CRITICAL: "red",
+}
+
+LEVEL_DESCRIPTIONS = {
+    LEVEL_LOW: "Risque faible d'accident vasculaire cérébral.",
+    LEVEL_MEDIUM: "Risque modéré d'accident vasculaire cérébral.",
+    LEVEL_HIGH: "Risque élevé d'accident vasculaire cérébral.",
+    LEVEL_CRITICAL: "Risque critique d'accident vasculaire cérébral nécessitant une attention immédiate.",
 }
 
 # Public-facing notes shown alongside the 3-level interpretation and the
@@ -60,7 +78,7 @@ NO_FACTOR_MESSAGE = "Aucun facteur majeur détecté dans les données fournies."
 
 
 def compute_risk_level(probability: float | int | None) -> dict:
-    """Return a 3-level risk interpretation derived from ``probability``.
+    """Return a 4-level risk interpretation derived from ``probability``.
 
     ``probability`` is the model's ``risk_probability`` in ``[0, 1]`` (the
     same value persisted on :class:`PredictionResult`). Out-of-range and
@@ -73,18 +91,22 @@ def compute_risk_level(probability: float | int | None) -> dict:
     raw = float(probability) if probability is not None else 0.0
     pct = max(0.0, min(1.0, raw)) * 100
 
-    if pct <= 30:
+    if pct <= 25:
         key = LEVEL_LOW
-    elif pct <= 60:
+    elif pct <= 50:
         key = LEVEL_MEDIUM
-    else:
+    elif pct <= 75:
         key = LEVEL_HIGH
+    else:
+        key = LEVEL_CRITICAL
 
     return {
         "key": key,
         "label": LEVEL_LABELS[key],
         "short": LEVEL_SHORT[key],
         "css": LEVEL_CSS[key],
+        "accent": LEVEL_ACCENT[key],
+        "description": LEVEL_DESCRIPTIONS[key],
         "probability_pct": pct,
         "probability_pct_int": int(round(pct)),
     }

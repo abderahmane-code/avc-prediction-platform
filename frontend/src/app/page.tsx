@@ -24,8 +24,8 @@ export default function LandingPage() {
         if (data.authenticated) {
           setUser(data.user);
         }
-      } catch (err) {
-        console.error("Session check failed", err);
+      } catch {
+        // Treat session lookup failures as anonymous visitors.
       } finally {
         setLoading(false);
       }

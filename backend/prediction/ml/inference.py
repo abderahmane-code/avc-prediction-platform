@@ -75,22 +75,31 @@ class PredictionOutput:
     risk_probability: float
     recommendation: str
     model_name: str
+    shap_explanation: dict | None = None
 
 
 # --------------------------------------------------------------------------- #
 # Loading / caching
 # --------------------------------------------------------------------------- #
 
+SHAP_EXPLAINER_PATH = BEST_MODEL_PATH.parent / "shap_explainer.pkl"
+
 # A single in-process cache. Models are pickled scikit-learn objects so they
 # are safe to share across threads for read-only inference.
 _LOCK = Lock()
-_CACHE: dict = {"signature": None, "preprocessor": None, "model": None, "name": None}
+_CACHE: dict = {
+    "signature": None,
+    "preprocessor": None,
+    "model": None,
+    "name": None,
+    "explainer": None,
+}
 
 
 def _artifact_signature() -> tuple:
     """Return ``(mtime, size)`` for each artifact so we can invalidate the cache."""
     out = []
-    for p in (PREPROCESSOR_PATH, BEST_MODEL_PATH):
+    for p in (PREPROCESSOR_PATH, BEST_MODEL_PATH, SHAP_EXPLAINER_PATH):
         try:
             stat = p.stat()
             out.append((str(p), stat.st_mtime_ns, stat.st_size))
@@ -112,8 +121,8 @@ def _read_best_model_name() -> str:
     return "Modèle IA"
 
 
-def _load_artifacts() -> tuple[object, object, str]:
-    """Return ``(preprocessor, model, model_name)``.
+def _load_artifacts() -> tuple[object, object, str, object | None]:
+    """Return ``(preprocessor, model, model_name, explainer)``.
 
     Raises :class:`MissingModelError` if either pkl file is missing on disk.
     Results are cached and invalidated whenever the artifacts' mtime changes,
@@ -130,8 +139,15 @@ def _load_artifacts() -> tuple[object, object, str]:
             _CACHE["preprocessor"] = joblib.load(PREPROCESSOR_PATH)
             _CACHE["model"] = joblib.load(BEST_MODEL_PATH)
             _CACHE["name"] = _read_best_model_name()
+            if SHAP_EXPLAINER_PATH.exists():
+                try:
+                    _CACHE["explainer"] = joblib.load(SHAP_EXPLAINER_PATH)
+                except Exception:
+                    _CACHE["explainer"] = None
+            else:
+                _CACHE["explainer"] = None
             _CACHE["signature"] = sig
-        return _CACHE["preprocessor"], _CACHE["model"], _CACHE["name"]
+        return _CACHE["preprocessor"], _CACHE["model"], _CACHE["name"], _CACHE["explainer"]
 
 
 # --------------------------------------------------------------------------- #
@@ -210,19 +226,57 @@ def predict_for_patient(patient) -> PredictionOutput:
 
     Raises :class:`MissingModelError` if the artifacts are not on disk.
     """
-    preprocessor, model, model_name = _load_artifacts()
+    preprocessor, model, model_name, explainer = _load_artifacts()
 
     df = _patient_to_dataframe(patient)
     X = preprocessor.transform(df)
     proba, pred = _risk_probability(model, X)
 
-    is_high = bool(pred)
+    pct = proba * 100
+    if pct <= 25:
+        risk_lbl = "low"
+        recommendation = RECOMMENDATION_LOW
+    elif pct <= 50:
+        risk_lbl = "moderate"
+        recommendation = "Le risque estimé est modéré selon les données fournies. Il est recommandé de surveiller régulièrement les facteurs de risque cliniques."
+    elif pct <= 75:
+        risk_lbl = "high"
+        recommendation = RECOMMENDATION_HIGH
+    else:
+        risk_lbl = "critical"
+        recommendation = "Ce patient présente un risque CRITIQUE d'AVC. Une intervention médicale d'urgence et des examens complémentaires sont fortement recommandés."
+
+    # Explainable AI calculation using SHAP
+    shap_explanation = {}
+    if explainer is not None:
+        try:
+            shap_out = explainer(X)
+            values = shap_out.values[0]
+            if len(values.shape) == 2 and values.shape[1] == 2:
+                feature_shap = values[:, 1]
+            else:
+                feature_shap = values
+
+            feature_names = preprocessor.get_feature_names_out()
+            for parent in ALL_FEATURES:
+                shap_explanation[parent] = 0.0
+
+            for col_name, val in zip(feature_names, feature_shap):
+                for parent in ALL_FEATURES:
+                    if col_name == parent or col_name.startswith(parent + "_"):
+                        shap_explanation[parent] += float(val)
+                        break
+        except Exception:
+            shap_explanation = {}
+
+    is_high = bool(pred) or (pct > 50)
     return PredictionOutput(
         prediction=is_high,
-        risk_label=RISK_LABEL_HIGH if is_high else RISK_LABEL_LOW,
+        risk_label=risk_lbl,
         risk_probability=float(max(0.0, min(1.0, proba))),
-        recommendation=RECOMMENDATION_HIGH if is_high else RECOMMENDATION_LOW,
+        recommendation=recommendation,
         model_name=model_name,
+        shap_explanation=shap_explanation if shap_explanation else None,
     )
 
 

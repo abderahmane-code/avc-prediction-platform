@@ -56,6 +56,7 @@ def _run_inference_and_save(patient: PatientData, user):
         risk_label=out.risk_label,
         risk_probability=out.risk_probability,
         recommendation=out.recommendation,
+        shap_explanation=out.shap_explanation,
     )
 
 
