@@ -8,6 +8,8 @@ from prediction import views as prediction_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # API endpoints for Next.js frontend
+    path("api/", include("avc_prediction_platform.api_urls", namespace="api")),
     # Public landing page — no auth required (Step 13).
     path("", dashboard_views.home, name="home"),
     path("accounts/", include("accounts.urls", namespace="accounts")),

@@ -1,40 +1,42 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+# Python & Django (Backend)
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.so
 .Python
-*.egg-info/
-.eggs/
-build/
-dist/
+**/*.egg-info/
+**/.eggs/
+**/build/
+**/dist/
+**/.venv/
+**/venv/
+**/env/
+**/ENV/
+**/.env
+**/.env.local
+**/*.log
+**/db.sqlite3
+**/db.sqlite3-journal
+**/media/
+**/staticfiles/
+**/*.joblib
+**/*.pkl
+**/prediction/ml/data/*.csv
+**/prediction/ml/artifacts/*.json
+**/nohup.out
 
-# Virtual environments
-.venv/
-venv/
-env/
-ENV/
-
-# Environment files
-.env
-.env.local
-
-# Django
-*.log
-db.sqlite3
-db.sqlite3-journal
-/media/
-/staticfiles/
+# Node / Next.js (Frontend)
+**/node_modules/
+**/.next/
+**/out/
+**/.env*.local
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.pnpm-debug.log*
 
 # Editors / OS
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
-
-# Data / models (keep tracked examples if any via explicit `git add -f`)
-*.joblib
-*.pkl
-prediction/ml/data/*.csv
-prediction/ml/artifacts/*.json
-nohup.out
