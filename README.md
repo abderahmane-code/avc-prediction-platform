@@ -305,6 +305,14 @@ Le cloisonnement par utilisateur reste appliqué : un utilisateur normal ne filt
 
 ---
 
+## 10quinquies. Page théorique des modèles
+
+La plateforme inclut une page authentifiée **`/modeles/theorie/`** qui présente les bases théoriques de trois modèles prioritaires utilisés dans le projet : **Logistic Regression**, **Decision Tree** et **Random Forest**.
+
+Cette page explique pour chaque modèle le principe, l'intérêt pour la prédiction du risque d'AVC, les avantages et les limites, puis propose un tableau comparatif synthétique. Un bouton **« Comprendre les modèles »** depuis `/modeles/comparaison/` permet d'y accéder rapidement.
+
+---
+
 ## 11. Avertissement médical
 
 > **Cette application est un projet académique et ne remplace pas un diagnostic médical.**

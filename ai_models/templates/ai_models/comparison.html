@@ -28,6 +28,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
         Voir l'historique
       </a>
+      <a href="{% url 'ai_models:theory' %}" class="btn btn--ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.5a5 5 0 0 0-5-2.5v14a5 5 0 0 1 5 2.5"/><path d="M12 6.5a5 5 0 0 1 5-2.5v14a5 5 0 0 0-5 2.5"/><path d="M12 6.5v14"/></svg>
+        Comprendre les modèles
+      </a>
     </div>
   </section>
 
@@ -215,13 +219,13 @@
         var payload = JSON.parse(raw.textContent);
 
         var palette = {
-          accuracy:  "#2563eb",
-          precision: "#0ea5e9",
-          recall:    "#0d9488",
-          f1:        "#14b8a6",
-          rocauc:    "#f59e0b",
-          best:      "#0d9488",
-          neutral:   "#94a3b8"
+          accuracy:  "#009B4E",
+          precision: "#3FAE72",
+          recall:    "#007A3D",
+          f1:        "#006B36",
+          rocauc:    "#C58A2A",
+          best:      "#007A3D",
+          neutral:   "#A7B8AE"
         };
 
         // ---- F1-only bar chart (best model in teal, others greyed) ----

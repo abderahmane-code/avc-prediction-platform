@@ -36,7 +36,8 @@ def staff_required(view_func):
     @login_required
     def _wrapped(request, *args, **kwargs):
         user = request.user
-        if not (user.is_staff or user.is_superuser):
+        is_admin = user.is_staff or user.is_superuser
+        if not is_admin:
             messages.error(request, "Accès réservé aux administrateurs.")
             return HttpResponseForbidden(
                 render(

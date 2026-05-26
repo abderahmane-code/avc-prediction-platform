@@ -12,24 +12,16 @@
 </head>
 <body class="auth-body">
   <main class="auth-shell">
-    <aside class="auth-hero" aria-hidden="true">
-      <div class="auth-hero__brand">
-        <span class="auth-hero__mark">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.5 2 6 4 7.5V22h8v-4.5c2-1.5 4-4 4-7.5a8 8 0 0 0-8-8Z"/><path d="M9 22h6"/></svg>
-        </span>
-        <div>
-          <div class="auth-hero__title">AVC Predict</div>
-          <div class="auth-hero__sub">Plateforme clinique IA</div>
-        </div>
+    <aside class="auth-hero" aria-label="Identité institutionnelle">
+      <div class="auth-hero__logos">
+        <img src="{% static 'img/mauritania-emblem.png' %}" alt="Emblème de la Mauritanie" class="auth-hero__emblem" />
+        <span class="auth-hero__separator" aria-hidden="true"></span>
+        <img src="{% static 'img/supnum-logo.png' %}" alt="SUPNUM" class="auth-hero__logo" />
       </div>
-      <h2 class="auth-hero__heading">Prédiction du risque d'AVC, assistée par IA.</h2>
-      <p class="auth-hero__lead">Connectez-vous pour soumettre des données patient, suivre vos prédictions et comparer les modèles entraînés.</p>
-      <ul class="auth-hero__points">
-        <li>6 modèles comparés (Logistic Regression, Random Forest, SVM…)</li>
-        <li>Historique privé sécurisé par utilisateur</li>
-        <li>Recommandations cliniques en français</li>
-      </ul>
-      <p class="auth-hero__disclaimer">Cette application ne remplace pas un diagnostic médical.</p>
+      <div class="auth-hero__identity">
+        <div class="auth-hero__title">AVC Predict</div>
+        <div class="auth-hero__sub">Plateforme clinique IA</div>
+      </div>
     </aside>
 
     <section class="auth-card-wrap">

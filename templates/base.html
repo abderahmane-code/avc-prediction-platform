@@ -64,7 +64,7 @@
           <div class="sidebar__footer-meta">
             <div class="sidebar__footer-name">{{ user.username }}</div>
             <div class="sidebar__footer-role">
-              {% if user.is_staff or user.is_superuser %}Administrateur{% else %}Compte clinicien{% endif %}
+              {% if user.is_staff or user.is_superuser %}Administrateur{% else %}Utilisateur{% endif %}
             </div>
           </div>
         {% else %}

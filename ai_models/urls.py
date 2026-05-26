@@ -8,4 +8,5 @@ app_name = "ai_models"
 
 urlpatterns = [
     path("comparaison/", views.comparison, name="comparison"),
+    path("theorie/", views.theory, name="theory"),
 ]

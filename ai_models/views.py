@@ -98,3 +98,13 @@ def comparison(request):
         "chart_payload": chart_payload,
     }
     return render(request, "ai_models/comparison.html", context)
+
+
+@login_required
+def theory(request):
+    """Render the theoretical overview of the main AI models."""
+    context = {
+        "page_title": "Théorie des modèles d'IA",
+        "active_nav": "models",
+    }
+    return render(request, "ai_models/theory.html", context)

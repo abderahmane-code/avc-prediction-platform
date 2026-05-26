@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Théorie des modèles · AVC Predict{% endblock %}
+
+{% block content %}
+  <section class="card cta-card" aria-labelledby="theory-title">
+    <header class="card__header">
+      <div>
+        <h2 id="theory-title" class="card__title">Théorie des modèles d'IA</h2>
+        <p class="card__subtitle">
+          Cette page présente les bases théoriques des principaux modèles de Machine Learning utilisés pour la prédiction du risque d’AVC.
+        </p>
+      </div>
+      <span class="chip chip--blue">Repères académiques</span>
+    </header>
+    <div class="cta-row">
+      <a href="{% url 'ai_models:comparison' %}" class="btn btn--secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 4 3 5-6"/></svg>
+        Retour à la comparaison
+      </a>
+    </div>
+  </section>
+
+  <section class="card explainer" aria-labelledby="models-theory-title">
+    <header class="card__header">
+      <div>
+        <h2 id="models-theory-title" class="card__title">Modèles prioritaires</h2>
+        <p class="card__subtitle">Principes, intérêt médical, avantages et limites.</p>
+      </div>
+      <span class="chip chip--teal">3 modèles</span>
+    </header>
+
+    <div class="explainer__grid">
+      <article class="explainer__item">
+        <h3 class="explainer__title">Régression logistique (Logistic Regression)</h3>
+        <p><strong>Principe.</strong> La régression logistique estime la probabilité qu’un patient présente un risque d’AVC à partir de variables cliniques comme l’âge, la glycémie, l’hypertension, les maladies cardiaques et l’IMC.</p>
+        <p><strong>Pourquoi l’utiliser pour la prédiction de l’AVC ?</strong> Elle sert de modèle de référence clair et rapide. Elle permet d’étudier l’association globale entre les facteurs cliniques et le risque estimé.</p>
+        <p><strong>Avantages.</strong> Elle est lisible, stable et peu coûteuse à entraîner. Son interprétation reste accessible dans un cadre académique.</p>
+        <p><strong>Limites.</strong> Elle modélise surtout des relations linéaires. Elle peut donc manquer des interactions complexes entre plusieurs facteurs médicaux.</p>
+      </article>
+
+      <article class="explainer__item">
+        <h3 class="explainer__title">Arbre de décision (Decision Tree)</h3>
+        <p><strong>Principe.</strong> L’arbre de décision classe les patients à l’aide d’une suite de règles. Chaque règle sépare les données selon une variable, par exemple l’âge, la glycémie ou l’hypertension.</p>
+        <p><strong>Pourquoi l’utiliser pour la prédiction de l’AVC ?</strong> Sa structure est proche d’un raisonnement par étapes. Elle aide à visualiser comment certains profils cliniques peuvent conduire à un risque plus élevé.</p>
+        <p><strong>Avantages.</strong> Il est très interprétable. Il peut représenter des relations non linéaires et des interactions simples entre variables.</p>
+        <p><strong>Limites.</strong> Un arbre isolé peut surapprendre les données d’entraînement. Il peut aussi devenir instable si de petites variations modifient ses règles.</p>
+      </article>
+
+      <article class="explainer__item">
+        <h3 class="explainer__title">Forêt aléatoire (Random Forest)</h3>
+        <p><strong>Principe.</strong> La forêt aléatoire combine plusieurs arbres de décision. Chaque arbre apprend sur une partie des données, puis l’ensemble des arbres vote pour produire une prédiction plus stable.</p>
+        <p><strong>Pourquoi l’utiliser pour la prédiction de l’AVC ?</strong> Elle est adaptée aux données cliniques tabulaires. Elle peut prendre en compte des relations complexes entre les facteurs de risque.</p>
+        <p><strong>Avantages.</strong> Elle est robuste et souvent performante. Elle réduit le surapprentissage par rapport à un arbre de décision unique.</p>
+        <p><strong>Limites.</strong> Elle est moins directement interprétable. Son fonctionnement global est plus difficile à expliquer qu’un modèle simple ou qu’un arbre isolé.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="theory-comparison-title">
+    <header class="card__header">
+      <div>
+        <h2 id="theory-comparison-title" class="card__title">Comparaison théorique</h2>
+        <p class="card__subtitle">Lecture synthétique des forces et limites de chaque approche.</p>
+      </div>
+      <span class="chip chip--blue">Synthèse</span>
+    </header>
+    <div class="table-wrap">
+      <table class="models-table" aria-label="Comparaison théorique des modèles">
+        <thead>
+          <tr>
+            <th scope="col">Modèle</th>
+            <th scope="col">Interprétabilité</th>
+            <th scope="col">Robustesse</th>
+            <th scope="col">Avantage principal</th>
+            <th scope="col">Limite principale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Régression logistique</th>
+            <td>Élevée</td>
+            <td>Moyenne</td>
+            <td>Lecture claire des facteurs</td>
+            <td>Relations surtout linéaires</td>
+          </tr>
+          <tr>
+            <th scope="row">Arbre de décision</th>
+            <td>Élevée</td>
+            <td>Moyenne</td>
+            <td>Règles faciles à expliquer</td>
+            <td>Risque de surapprentissage</td>
+          </tr>
+          <tr>
+            <th scope="row">Forêt aléatoire</th>
+            <td>Moyenne</td>
+            <td>Élevée</td>
+            <td>Bonne performance tabulaire</td>
+            <td>Explication moins directe</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="academic-note-title">
+    <header class="card__header">
+      <div>
+        <h2 id="academic-note-title" class="card__title">Note académique</h2>
+      </div>
+      <span class="chip chip--teal">Métriques</span>
+    </header>
+    <p class="medical-disclaimer">
+      Dans un contexte médical, le rappel et le F1-score sont particulièrement importants, car les données sont souvent déséquilibrées et les faux négatifs peuvent avoir des conséquences graves.
+    </p>
+  </section>
+{% endblock %}
